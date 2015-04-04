@@ -89,11 +89,11 @@ app.config(function ($urlRouterProvider, $stateProvider, $httpProvider, $authPro
 
   // Google
   $authProvider.google({
-    clientId: '526391676642-nbnoavs078shhti3ruk8jhl4nenv0g04.apps.googleusercontent.com',
+    clientId: '114811005505-s7pvu8ur4b4v15bk0ioa7g1fqbrhlpf3.apps.googleusercontent.com',
     url: '/authenticate/google',
     authorizationEndpoint: 'https://accounts.google.com/o/oauth2/auth',
     redirectUri: window.location.origin || window.location.protocol + '//' + window.location.host,
-    scope: ['profile', 'email'],
+    scope: ['email'],
     scopePrefix: 'openid',
     scopeDelimiter: ' ',
     requiredUrlParams: ['scope'],

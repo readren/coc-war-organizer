@@ -8,9 +8,9 @@ import scalariform.formatter.preferences._
 // Play settings
 //********************************************************
 
-name := "play-silhouette-angular-seed"
+name := """coc-war-organizer"""
 
-version := "2.1-SNAPSHOT"
+version := "0.1"
 
 scalaVersion := "2.11.6"
 
@@ -21,6 +21,9 @@ resolvers += Resolver.sonatypeRepo("snapshots")
 libraryDependencies ++= Seq(
   "com.mohiva" %% "play-silhouette" % "2.0",
   "net.codingwell" %% "scala-guice" % "4.0.0-beta5",
+  "org.postgresql" % "postgresql" % "9.4-1201-jdbc41",
+  jdbc,
+  anorm,
   cache
 )
 
