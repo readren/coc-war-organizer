@@ -12,12 +12,19 @@ import scala.concurrent.Future
 trait UserService extends IdentityService[User] {
 
   /**
-   * Saves a user.
+   * Inserts a new user.
    *
    * @param user The user to save.
    * @return The saved user.
    */
-  def save(user: User): Future[User]
+  def insert(user: User): Future[User]
+  
+  /**
+   * updates an existing user
+   * @param user The user to update
+   * @return The updated user
+   */
+  def update(user: User): Future[User]
 
   /**
    * Saves the social profile for a user.

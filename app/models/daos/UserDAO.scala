@@ -29,10 +29,18 @@ trait UserDAO {
   def find(userID: UUID): Future[Option[User]]
 
   /**
-   * Saves a user.
+   * Updates a user.
    *
    * @param user The user to save.
-   * @return The saved user.
+   * @return The updated user.
    */
-  def save(user: User): Future[User]
+  def update(user: User): Future[User]
+  
+  /**
+   * Insert a user.
+   *
+   * @param user The user to save.
+   * @return The inserted user.
+   */
+  def insert(user:User): Future[User]
 }

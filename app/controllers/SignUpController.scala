@@ -56,7 +56,7 @@ class SignUpController @Inject() (
             avatarURL = None
           )
           for {
-            user <- userService.save(user)
+            user <- userService.insert(user)
             authInfo <- authInfoService.save(loginInfo, authInfo)
             authenticator <- env.authenticatorService.create(loginInfo)
             token <- env.authenticatorService.init(authenticator)
