@@ -6,14 +6,12 @@ import com.mohiva.play.silhouette.api.LoginInfo
 import models.User
 import models.daos.UserDAOImpl._
 
-import scala.collection.mutable
 import scala.concurrent.Future
 import anorm._
 import play.api.Play.current
 import play.api.db.DB
 import anorm.SqlParser._
 import scala.concurrent.ExecutionContext.Implicits.global
-
 
 /**
  * Give access to the user object.
@@ -30,8 +28,7 @@ class UserDAOImpl extends UserDAO {
 		Future {
 			val sql = SQL"select * from auth_user u where u.provider_id = ${loginInfo.providerID} and u.provider_key = ${loginInfo.providerKey}"
 			DB.withConnection { implicit connection =>
-				val user = sql.as(userParser.singleOpt)
-				user
+				sql.as(userParser.singleOpt)
 			}
 		}
 	}
@@ -62,7 +59,7 @@ class UserDAOImpl extends UserDAO {
 		Future {
 			val sql = SQL"""
 update auth_user set
-  provider_id = ${user.loginInfo.providerID},
+	provider_id = ${user.loginInfo.providerID},
 	provider_key = ${user.loginInfo.providerKey},
 	first_name = ${user.firstName.orNull: String},
 	last_name = ${user.lastName.orNull: String},
@@ -70,11 +67,11 @@ update auth_user set
 	email = ${user.email.orNull: String},
 	avatar_url = ${user.avatarURL.orNull: String}
 where user_id = ${user.userID}::uuid""";
-			DB.withConnection { implicit connection =>
-				val count = sql.executeUpdate()
-				/// TODO manage failure
+			val count = DB.withConnection { implicit connection =>
+				sql.executeUpdate()
 			}
-			user
+			if (count == 1) user
+			else throw new AssertionError(s"User update failed: count=$count, user=$user");
 		}
 	}
 
@@ -104,7 +101,7 @@ insert into auth_user (
 				sql.executeUpdate()
 			}
 			if (count == 1) user
-			else throw new AssertionError(s"User insert failed: count=$count");
+			else throw new AssertionError(s"User insert failed: count=$count, user=$user");
 		}
 	}
 }

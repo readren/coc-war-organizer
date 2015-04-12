@@ -39,8 +39,10 @@ scalacOptions ++= Seq(
   "-Ywarn-dead-code", // Warn when dead code is identified.
   "-Ywarn-inaccessible", // Warn about inaccessible types in method signatures.
   "-Ywarn-nullary-override", // Warn when non-nullary overrides nullary, e.g. def foo() over def foo.
-  "-Ywarn-numeric-widen" // Warn when numerics are widened.
+  "-Ywarn-numeric-widen", // Warn when numerics are widened.
+  "-language:reflectiveCalls" // Prevents reflective usage warnings to appear //TODO study how to avoid this setting
 )
+
 
 //********************************************************
 // Yeoman settings
