@@ -1,4 +1,4 @@
-package utils.di
+package auth
 
 import com.google.inject.{ AbstractModule, Provides }
 import com.mohiva.play.silhouette.api.services._
@@ -14,9 +14,9 @@ import com.mohiva.play.silhouette.impl.providers.oauth2._
 import com.mohiva.play.silhouette.impl.providers.oauth2.state.DummyStateProvider
 import com.mohiva.play.silhouette.impl.services._
 import com.mohiva.play.silhouette.impl.util._
-import models.User
-import models.daos._
-import models.services.{ UserService, UserServiceImpl }
+import auth.models.User
+import auth.models.daos._
+import auth.models.services.{ UserService, UserServiceImpl }
 import net.codingwell.scalaguice.ScalaModule
 import play.api.Play
 import play.api.Play.current

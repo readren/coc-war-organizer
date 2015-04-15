@@ -1,4 +1,4 @@
-package controllers
+package auth.controllers
 
 import java.util.UUID
 import javax.inject.Inject
@@ -8,9 +8,9 @@ import com.mohiva.play.silhouette.api.services.AuthInfoService
 import com.mohiva.play.silhouette.api.util.PasswordHasher
 import com.mohiva.play.silhouette.impl.authenticators.JWTAuthenticator
 import com.mohiva.play.silhouette.impl.providers.CredentialsProvider
-import forms.SignUpForm
-import models.User
-import models.services.UserService
+import auth.forms.SignUpForm
+import auth.models.User
+import auth.models.services.UserService
 import play.api.i18n.Messages
 import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.json.Json

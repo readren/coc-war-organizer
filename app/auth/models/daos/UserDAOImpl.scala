@@ -1,10 +1,10 @@
-package models.daos
+package auth.models.daos
 
 import java.util.UUID
 
 import com.mohiva.play.silhouette.api.LoginInfo
-import models.User
-import models.daos.UserDAOImpl._
+import auth.models.User
+import auth.models.daos.UserDAOImpl._
 
 import scala.concurrent.Future
 import anorm._

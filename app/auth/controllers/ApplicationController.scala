@@ -1,10 +1,10 @@
-package controllers
+package auth.controllers
 
 import javax.inject.Inject
 
 import com.mohiva.play.silhouette.api.{ Environment, LogoutEvent, Silhouette }
 import com.mohiva.play.silhouette.impl.authenticators.JWTAuthenticator
-import models.User
+import auth.models.User
 import play.api.libs.json.Json
 
 import scala.concurrent.Future
@@ -42,10 +42,10 @@ class ApplicationController @Inject() (implicit val env: Environment[User, JWTAu
    */
   def view(template: String) = UserAwareAction { implicit request =>
     template match {
-      case "home" => Ok(views.html.home())
-      case "signUp" => Ok(views.html.signUp())
-      case "signIn" => Ok(views.html.signIn())
-      case "navigation" => Ok(views.html.navigation.render())
+      case "home" => Ok(home.html.home())
+      case "signUp" => Ok(auth.views.html.signUp())
+      case "signIn" => Ok(auth.views.html.signIn())
+      case "navigation" => Ok(navigation.html.navigation.render())
       case _ => NotFound
     }
   }

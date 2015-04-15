@@ -3,7 +3,7 @@ package app
 import com.google.inject.Guice
 import com.mohiva.play.silhouette.api.{ Logger, SecuredSettings }
 import play.api.GlobalSettings
-import utils.di.SilhouetteModule
+import auth.SilhouetteModule
 
 /**
  * The global configuration.

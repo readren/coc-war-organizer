@@ -1,6 +1,8 @@
 @()(implicit request: RequestHeader)
 
-@import forms.SignUpForm.form
+@import auth.forms.SignUpForm.form
+@import auth.models
+@import auth.controllers
 @implicitField = @{ helper.FieldConstructor(fields.constructor.f) }
 
 <fieldset class="col-md-6 col-md-offset-3" ng-controller="SignUpCtrl">

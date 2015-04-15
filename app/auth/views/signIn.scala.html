@@ -1,7 +1,7 @@
-@()(implicit env: com.mohiva.play.silhouette.api.Environment[User, _], request: RequestHeader)
+@()(implicit env: com.mohiva.play.silhouette.api.Environment[auth.models.User, _], request: RequestHeader)
 
 @import com.mohiva.play.silhouette.impl.providers._
-@import forms.SignInForm.form
+@import auth.forms.SignInForm.form
 @import play.api.Play
 @import play.api.Play.current
 @implicitField = @{ helper.FieldConstructor(fields.constructor.f) }

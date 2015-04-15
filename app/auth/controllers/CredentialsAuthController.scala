@@ -1,4 +1,4 @@
-package controllers
+package auth.controllers
 
 import javax.inject.Inject
 
@@ -10,8 +10,8 @@ import com.mohiva.play.silhouette.impl
 import com.mohiva.play.silhouette.impl.authenticators.JWTAuthenticator
 import com.mohiva.play.silhouette.impl.exceptions.IdentityNotFoundException
 import com.mohiva.play.silhouette.impl.providers.CredentialsProvider
-import models.User
-import models.services.UserService
+import auth.models.User
+import auth.models.services.UserService
 import play.api.i18n.Messages
 import play.api.libs.json._
 import play.api.libs.functional.syntax._

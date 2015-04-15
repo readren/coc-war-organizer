@@ -1,4 +1,4 @@
-package controllers
+package auth.controllers
 
 import javax.inject.Inject
 
@@ -7,8 +7,8 @@ import com.mohiva.play.silhouette.api.exceptions.ProviderException
 import com.mohiva.play.silhouette.api.services.AuthInfoService
 import com.mohiva.play.silhouette.impl.authenticators.JWTAuthenticator
 import com.mohiva.play.silhouette.impl.providers._
-import models.User
-import models.services.UserService
+import auth.models.User
+import auth.models.services.UserService
 import play.api.i18n.Messages
 import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.json.Json

@@ -1,4 +1,4 @@
-package forms
+package auth.forms
 
 import com.mohiva.play.silhouette.api.util.Credentials
 import play.api.data.Form

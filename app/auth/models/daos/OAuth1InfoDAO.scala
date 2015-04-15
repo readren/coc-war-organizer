@@ -1,9 +1,9 @@
-package models.daos
+package auth.models.daos
 
 import com.mohiva.play.silhouette.api.LoginInfo
 import com.mohiva.play.silhouette.impl.daos.DelegableAuthInfoDAO
 import com.mohiva.play.silhouette.impl.providers.OAuth1Info
-import models.daos.OAuth1InfoDAO._
+import auth.models.daos.OAuth1InfoDAO._
 
 import scala.concurrent.Future
 import anorm._

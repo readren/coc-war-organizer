@@ -34,7 +34,7 @@ app.config(function ($urlRouterProvider, $stateProvider, $httpProvider, $authPro
     .when('/', 'signIn');
 
   $stateProvider
-  	.state('accountSettings',{ur: '/accountSettings', templateUrl:'/views/accountSettings.html'})
+	.state('accountSettings',{ur: '/accountSettings', templateUrl:'/views/accountSettings.html'})
     .state('home', { url: '/home', templateUrl: '/views/home.html' })
     .state('signUp', { url: '/signUp', templateUrl: '/views/signUp.html' })
     .state('signIn', { url: '/signIn', templateUrl: '/views/signIn.html' })
