@@ -11,17 +11,14 @@ var app = angular.module('uiApp', [
   'satellizer'
 ]);
 
+
 /**
  * The run configuration.
  */
-app.run(function($rootScope) {
-
-  /**
-   * The user data.
-   *
-   * @type {{}}
-   */
-  $rootScope.user = {};
+app.run(function($rootScope, $auth, $state, $timeout) {
+	if ($auth.isAuthenticated()) {
+		$auth.logout();
+	}
 });
 
 /**
@@ -34,7 +31,7 @@ app.config(function ($urlRouterProvider, $stateProvider, $httpProvider, $authPro
     .when('/', 'signIn');
 
   $stateProvider
-	.state('accountSettings',{ur: '/accountSettings', templateUrl:'/views/accountSettings.html'})
+	.state('accountSettings',{url: '/accountSettings', templateUrl:'/views/accountSettings.html'})
     .state('home', { url: '/home', templateUrl: '/views/home.html' })
     .state('signUp', { url: '/signUp', templateUrl: '/views/signUp.html' })
     .state('signIn', { url: '/signIn', templateUrl: '/views/signIn.html' })
@@ -63,7 +60,7 @@ app.config(function ($urlRouterProvider, $stateProvider, $httpProvider, $authPro
   // Auth config
   $authProvider.httpInterceptor = true; // Add Authorization header to HTTP request
   $authProvider.loginOnSignup = true;
-  $authProvider.loginRedirect = '/home';
+  $authProvider.loginRedirect = '/accountSettings';
   $authProvider.logoutRedirect = '/';
   $authProvider.signupRedirect = '/home';
   $authProvider.loginUrl = '/signIn';
@@ -111,3 +108,5 @@ app.config(function ($urlRouterProvider, $stateProvider, $httpProvider, $authPro
     popupOptions: { width: 495, height: 645 }
   });
 });
+
+

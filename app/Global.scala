@@ -4,6 +4,7 @@ import com.google.inject.Guice
 import com.mohiva.play.silhouette.api.{ Logger, SecuredSettings }
 import play.api.GlobalSettings
 import auth.SilhouetteModule
+import common.CommonsModule
 
 /**
  * The global configuration.
@@ -13,7 +14,7 @@ object Global extends GlobalSettings with SecuredSettings with Logger {
   /**
    * The Guice dependencies injector.
    */
-  val injector = Guice.createInjector(new SilhouetteModule)
+  val injector = Guice.createInjector(new SilhouetteModule, new CommonsModule)
 
   /**
    * Loads the controller classes with the Guice injector,

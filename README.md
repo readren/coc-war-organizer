@@ -106,6 +106,15 @@ Consulate the [Silhouette documentation](http://silhouette.mohiva.com/docs) for 
   $ run
   ```
 
+## Eclipse configuration
+1. In the activator console enter ```eclipse with-sources=true```
+2. Open eclipse and import the project using the "General/Existing project into workspace" importer.
+3. Install the angularJs plugin
+4. Apply the angularJs nature to the project: right-click the project, left-click "configure", left-click "Convert to angular project". This step should add the "org.eclipse.wst.jsdt.core.jsNature", but sometimes that requires a restart.
+5. Open the project properties dialog, select the "javaScript/Include Path" tab, and add all the relevant java script folders/files.
+	Note: By default, eclipse adds the project root as a script folder. Remove it to speed up the script validations.
+6. In "conf/application.conf" file, edit the "yeoman.devDirs" entry to include the play "app" package folder, like so: yeoman.devDirs=["ui/.tmp", "ui/app", "app"]
+
 ## Activator
 
 See https://typesafe.com/activator/template/play-silhouette-angular-seed

@@ -19,12 +19,13 @@
 
                     <!-- User is logged out -->
                     <li ng-if="!isAuthenticated()"><a ui-sref="signIn">Home</a></li>
-
-                    <li><a href="https://github.com/mohiva/play-silhouette-angular-seed">GitHub</a></li>
+					<li><a ui-sref="accountSettings">account</a></li>
+                    <li><a href="https://github.com/readren/coc-war-organizer">GitHub</a></li>
                 </ul>
                 <ul class="nav navbar-nav navbar-right">
                     <!-- User is logged in -->
-                    <li ng-if="isAuthenticated()"><a ui-sref="home">{{user.fullName ? user.fullName : user.firstName}}</a></li>
+                    <li ng-if="isIdentifyed()"><a ui-sref="home">{{user.fullName ? user.fullName : user.firstName}}</a></li>
+                    <li ng-if="isIdentifying()"><a ui-sref="home">...'</a></li>
                     <li ng-if="isAuthenticated()" ui-sref="signOut"><a href="">Sign Out</a></li>
 
                     <!-- User is logged out -->
