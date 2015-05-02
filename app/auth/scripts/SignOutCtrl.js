@@ -5,7 +5,7 @@
 /**
  * The sign out controller.
  */
-app.controller('SignOutCtrl', [ '$auth', '$rootScope', '$alert', function($auth, $alert) {
+app.controller('SignOutCtrl', [ '$auth', '$rootScope', '$alert', function($auth, $rootScope, $alert) {
 	if ($auth.isAuthenticated()) {
 		$rootScope.user = null;
 		$auth.logout().then(function() {

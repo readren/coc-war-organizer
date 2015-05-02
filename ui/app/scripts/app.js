@@ -8,7 +8,8 @@ var app = angular.module('uiApp', [
   'ngMessages',
   'ui.router',
   'mgcrea.ngStrap',
-  'satellizer'
+  'satellizer',
+  'ngAnimate'
 ]);
 
 

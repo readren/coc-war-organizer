@@ -14,7 +14,7 @@ app.factory('userService', ['$http', '$auth', '$q', function($http, $auth, $q) {
 		var deferred = $q.defer();
 		if( !$auth.isAuthenticated())
 			deferred.reject('No user is currently authenticated');
-		else if( currentUser!=null && currentToken === $auth.getToken())
+		else if( currentUser != null && currentToken === $auth.getToken())
 			deferred.resolve(currentUser);
 		else {
 			$http.get('/user').then(

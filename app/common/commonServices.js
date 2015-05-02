@@ -1,20 +1,27 @@
 'use strict';
 
-app.factory('accountService', ['$http', '$q', function($http, $q) {
+app.factory('accountService', ['$http', '$q', '$auth', function($http, $q, $auth) {
 	
+	/** cached accounts */
 	var accounts = null;
+	/** token with which the cached accounts were retrieved*/
+	var ownerToken = null;
+	/** knower of the current account */
 	var currentAccount = null;
 
+	/** gives the CoC accounts of the current user */
 	var getAccountsPromise = function() {
 		var deferred = $q.defer();
 		
-		if( angular.isArray(accounts)) { //if the accounts were already retrieved, give them
+		if( angular.isArray(accounts) && ownerToken === $auth.getToken()) { //if the accounts were already retrieved, give them from the cache
 			deferred.resolve(accounts);
 		} else { // else, retrieve them from the server
 			$http.get('/accounts').then(
 				function(value) {
 					accounts = value.data;
-					if(accounts.length>0) currentAccount = accounts[0];
+					ownerToken = $auth.getToken();
+					if(accounts.length > 0)
+						currentAccount = accounts[0];
 					deferred.resolve(accounts);
 				}, function(reason) {
 					deferred.reject('Retrieval of accounts from server has failed. Reason: ' + reason.data);
@@ -24,6 +31,7 @@ app.factory('accountService', ['$http', '$q', function($http, $q) {
 	};
 	
 	
+	/** adds a new account for current user */
 	var addNewAccountPromise = function(newAccountProyect) {
 		var deferred = $q.defer();
 		$http.post('/addAccount', newAccountProyect).then(

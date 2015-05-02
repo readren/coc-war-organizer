@@ -181,3 +181,61 @@ a {
 .dropdown-menu {
 	display:block;
 }
+
+.in-blk {
+	display:inline-block;
+}
+
+
+.am-fade {
+  -webkit-animation-duration: 0.6s;
+  animation-duration: 0.6s;
+  -webkit-animation-timing-function: linear;
+  animation-timing-function: linear;
+  -webkit-animation-fill-mode: backwards;
+  animation-fill-mode: backwards;
+  opacity: 1;
+}
+
+.my-fade {
+  -webkit-animation-duration: 5s;
+  animation-duration: 5s;
+  -webkit-animation-timing-function: linear;
+  animation-timing-function: linear;
+  -webkit-animation-fill-mode: backwards;
+  animation-fill-mode: backwards;
+  opacity: 1;
+}
+.my-fade.my-fade-add,
+.my-fade.ng-hide-remove,
+.my-fade.ng-move {
+  -webkit-animation-name: fadeIn;
+  animation-name: fadeIn;
+}
+.my-fade.my-fade-remove,
+.my-fade.ng-hide {
+  -webkit-animation-name: fadeOut;
+  animation-name: fadeOut;
+}
+.my-fade.ng-enter {
+  visibility: hidden;
+  -webkit-animation-name: fadeIn;
+  animation-name: fadeIn;
+  -webkit-animation-play-state: paused;
+  animation-play-state: paused;
+}
+.my-fade.ng-enter.ng-enter-active {
+  visibility: visible;
+  -webkit-animation-play-state: running;
+  animation-play-state: running;
+}
+.my-fade.ng-leave {
+  -webkit-animation-name: fadeOut;
+  animation-name: fadeOut;
+  -webkit-animation-play-state: paused;
+  animation-play-state: paused;
+}
+.my-fade.ng-leave.ng-leave-active {
+  -webkit-animation-play-state: running;
+  animation-play-state: running;
+}
