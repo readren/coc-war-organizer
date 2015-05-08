@@ -20,7 +20,11 @@ app.controller('accountSettingsCtrl', ['accountService', '$alert', function(acco
 
 	// current account switching
 	asc.getCurrentAccount = accountService.getCurrentAccount;
-	asc.setCurrentAccount = accountService.setCurrentAccount;
+//	asc.setCurrentAccount = accountService.setCurrentAccount;
+	asc.setCurrentAccount = function(account) {
+		asc.currentAccountSetterInterceptor(accountService.setCurrentAccount, account);
+	};
+
 
 	// account adding 
 	asc.newAccountProject = {};

@@ -1,22 +1,30 @@
 @import "../bower_components/bootstrap-sass-official/assets/stylesheets/bootstrap-compass";
 @import "../bower_components/bootstrap-sass-official/assets/stylesheets/bootstrap";
-@import "../bower_components/bootstrap-sass-official/assets/stylesheets/bootstrap/dropdowns";
 
 
 body {
   font-family: 'Open Sans', sans-serif;
   padding-top: 50px;
+  background-image: url('/assets/images/dark_embroidery.png')
 }
 
 .starter-template {
   padding: 40px 15px;
 }
 
+section {
+	background-image: url('/assets/images/witewall_3.png');
+}
+.btn {
+	background-image: url('/assets/images/wavegrid.png');
+}
+
 form {
-  .text-danger {
-    color: #950e2d;
-    margin-bottom: 10px;
-  }
+	
+	.text-danger {
+		color: #950e2d;
+		margin-bottom: 10px;
+	}
   .ng-invalid.ng-dirty {
     border-color: #950e2d;
   }
@@ -26,6 +34,10 @@ form {
 
   input, button {
     margin: 5px 0;
+  }
+  
+  input {
+  	background-image: url('/assets/images/handmadepaper.png')
   }
 }
 
@@ -182,20 +194,76 @@ a {
 	display:block;
 }
 
-.in-blk {
+.dib {
 	display:inline-block;
+}
+
+.dark-text-shadow {
+	text-shadow: rgb(99,99,99) 1px 1px 3px;
+}
+.pale-text-shadow {
+	text-shadow: rgb(0,0,0) 1px 1px 3px;
 }
 
 
 .am-fade {
   -webkit-animation-duration: 0.6s;
   animation-duration: 0.6s;
+}
+
+
+.rea-flip {
+  -webkit-animation-duration: .5s;
+  animation-duration: .5s;
   -webkit-animation-timing-function: linear;
   animation-timing-function: linear;
-  -webkit-animation-fill-mode: backwards;
-  animation-fill-mode: backwards;
-  opacity: 1;
+  -webkit-animation-fill-mode: forwards;
+  animation-fill-mode: forwards;
 }
+.rea-flip.rea-flip-add,
+.rea-flip.ng-hide-remove,
+.rea-flip.rea-change-remove,
+.rea-flip.ng-move {
+  -webkit-animation-name: rea-flip-in;
+  animation-name: rea-flip-in;
+}
+.rea-flip.rea-flip-remove,
+.rea-flip.ng-hide,
+.rea-flip.rea-change {
+  -webkit-animation-name: rea-flip-out;
+  animation-name: rea-flip-out;
+}
+.rea-flip.ng-enter, rea-flip.ng {
+  -webkit-animation-name: rea-flip-in;
+  animation-name: rea-flip-in;
+  -webkit-animation-play-state: paused;
+  animation-play-state: paused;
+  display: none;
+}
+.rea-flip.ng-enter.ng-enter-active {
+  -webkit-animation-play-state: running;
+  animation-play-state: running;
+  display: block;
+}
+.rea-flip.ng-leave {
+  -webkit-animation-name: rea-flip-out;
+  animation-name: rea-flip-out;
+  -webkit-animation-play-state: paused;
+  animation-play-state: paused;
+}
+.rea-flip.ng-leave.ng-leave-active {
+  -webkit-animation-play-state: running;
+  animation-play-state: running;
+}
+@-webkit-keyframes rea-flip-out {
+	0%		{transform: rotateX(0deg)}
+	100%	{transform: rotateX(90deg)}
+}
+@-webkit-keyframes rea-flip-in {
+	0%		{transform: rotateX(90deg)}
+	100%	{transform: rotateX(0deg)}
+}
+
 
 .my-fade {
   -webkit-animation-duration: 5s;

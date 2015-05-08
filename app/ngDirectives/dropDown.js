@@ -27,7 +27,11 @@ app.directive('reaDropDown',[function(){
 	
 	return {
 		restrcit: 'EA',
-		scope: {show: '=?reaShow', hide: '=?reaHide', toggle: '=?reaToggle'},
+		scope: {
+			show: '=?reaShow', // gives the function that should be called to show all the subordinate contents
+			hide: '=?reaHide', // gives the function that should be called to hide all the subordinate contents
+			toggle: '=?reaToggle' // gives the function that should be called to toggle all the subordinate contents
+		},
 		link: link,
 		controller: controller
 	};
@@ -64,7 +68,11 @@ app.directive('reaDropDown',[function(){
 	return {
 		require: '^reaDropDown',
 		restrict: 'AE',
-		scope: {show: '=?reaShow', hide: '=?reaHide', toggle: '=?reaToggle'},
+		scope: {
+			show: '=?reaShow', // gives the function that should be called to show this subordinate content
+			hide: '=?reaHide', // gives the function that should be called to hide this subordinate content
+			toggle: '=?reaToggle' // gives the function that should be called to toggle this subordinate content
+		},
 		link: link
 	};
 }]);

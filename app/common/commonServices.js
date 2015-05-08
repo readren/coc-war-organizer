@@ -22,6 +22,8 @@ app.factory('accountService', ['$http', '$q', '$auth', function($http, $q, $auth
 					ownerToken = $auth.getToken();
 					if(accounts.length > 0)
 						currentAccount = accounts[0];
+					else
+						currentAccount = null;
 					deferred.resolve(accounts);
 				}, function(reason) {
 					deferred.reject('Retrieval of accounts from server has failed. Reason: ' + reason.data);
@@ -51,10 +53,15 @@ app.factory('accountService', ['$http', '$q', '$auth', function($http, $q, $auth
 		return deferred.promise;
 	};
 	
+	var getCurrentAccount = function() {
+		return ownerToken === $auth.getToken() ? currentAccount : null;
+	};
+	var setCurrentAccount = function(account) { currentAccount = account;};
+	
 	return {
 		getAccountsPromise : getAccountsPromise,
 		addNewAccountPromise: addNewAccountPromise,
-		getCurrentAccount: function() { return currentAccount; },
-		setCurrentAccount: function(account) { currentAccount = account;}
+		getCurrentAccount: getCurrentAccount,
+		setCurrentAccount: setCurrentAccount
 	};
 }]);
