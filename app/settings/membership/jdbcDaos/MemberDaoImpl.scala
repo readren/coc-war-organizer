@@ -1,15 +1,14 @@
-package settings.jdbcDaos
+package settings.membership.jdbcDaos
 
 import anorm._
 import anorm.SqlParser._
 import utils.JdbcTransacMode
-import java.util.UUID
-import auth.models.User
-import settings.MemberDao
-import settings.Organization
-import settings.Member
-import settings.MemberDto
+import settings.membership.MemberDao
+import settings.membership.Organization
+import settings.membership.Member
+import settings.membership.MemberDto
 import utils.UuidToStatement._
+import anorm.ParameterValue.toParameterValue
 
 /**
  * @author Gustavo

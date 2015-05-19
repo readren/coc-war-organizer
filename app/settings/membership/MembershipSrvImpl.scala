@@ -1,4 +1,4 @@
-package settings
+package settings.membership
 
 import javax.inject.Inject
 import java.util.UUID
@@ -7,6 +7,8 @@ import utils.Transition
 import utils.TransacMode
 import auth.models.User
 import play.api.Logger
+import settings.account.Account
+import settings.account.AccountService
 
 trait MembershipDao {
 	def getMemberAndOrganizationOf(userId: User.Id, accountTag: Account.Tag): Transition[TransacMode, Option[(MemberDto, Organization)]]

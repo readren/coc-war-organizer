@@ -1,17 +1,17 @@
-package settings.jdbcDaos
+package settings.membership.jdbcDaos
 
 import anorm._
 import anorm.SqlParser._
 import utils.JdbcTransacMode
 import org.postgresql.util.PSQLException
 import java.util.UUID
-import settings.Account
 import common.AlreadyExistException
-import settings.Organization
-import settings.OrganizationDao
-import settings.SearchOrganizationsCmd
-import settings.CreateOrganizationCmd
+import settings.membership.Organization
+import settings.membership.OrganizationDao
+import settings.membership.SearchOrganizationsCmd
+import settings.membership.CreateOrganizationCmd
 import utils.UuidToStatement._
+import anorm.ParameterValue.toParameterValue
 
 /**
  * @author Gustavo

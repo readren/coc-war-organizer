@@ -1,7 +1,7 @@
 /**
  *
  */
-package settings
+package settings.membership
 
 /**
  * @author Gustavo
@@ -12,6 +12,7 @@ import java.util.UUID
 import utils.Transition
 import utils.TransacMode
 import auth.models.User
+import settings.account.Account
 
 
 case class Organization(id: Organization.Id, clanName: String, clanTag: String, description: Option[String])

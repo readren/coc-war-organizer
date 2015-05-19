@@ -1,5 +1,5 @@
 
-package settings
+package settings.membership
 
 import javax.inject.Inject
 import com.mohiva.play.silhouette.api.Environment
@@ -15,6 +15,8 @@ import utils.Transition
 import utils.TransacMode
 import utils.executionContexts._
 import play.api.libs.json.JsError
+import settings.account.AccountService
+import settings.account.Account
 
 class MembershipCtrl @Inject() (implicit val env: Environment[User, JWTAuthenticator], membershipSrv: MembershipSrv, transacTransitionExec: TransacTransitionExec, accountService: AccountService)
 	extends Silhouette[User, JWTAuthenticator] {

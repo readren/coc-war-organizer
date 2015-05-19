@@ -1,4 +1,4 @@
-package settings
+package settings.account
 
 import auth.models.User
 import scala.concurrent.Future

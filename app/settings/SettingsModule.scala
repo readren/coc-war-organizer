@@ -2,17 +2,26 @@ package settings
 
 import com.google.inject.AbstractModule
 import com.google.inject.Provides
-
-import settings.jdbcDaos.JoinRequestDaoImpl
-import settings.jdbcDaos.MemberDaoImpl
-import settings.jdbcDaos.MembershipDaoImpl
-import settings.jdbcDaos.OrganizationDaoImpl
 import javax.sql.DataSource
 import net.codingwell.scalaguice.ScalaModule
 import play.api.Play.current
 import play.api.db.DB
 import utils.JdbcTransacTransitionExec
 import utils.TransacTransitionExec
+import settings.account.AccountService
+import settings.account.AccountDao
+import settings.account.AccountDaoImpl
+import settings.account.AccountServiceImpl
+import settings.membership.MembershipSrv
+import settings.membership.OrganizationDao
+import settings.membership.MembershipSrvImpl
+import settings.membership.MembershipDao
+import settings.membership.MemberDao
+import settings.membership.JoinRequestDao
+import settings.membership.jdbcDaos.MemberDaoImpl
+import settings.membership.jdbcDaos.JoinRequestDaoImpl
+import settings.membership.jdbcDaos.MembershipDaoImpl
+import settings.membership.jdbcDaos.OrganizationDaoImpl
 
 /**
  * The Guice module which wires all dependencies of the commons package.

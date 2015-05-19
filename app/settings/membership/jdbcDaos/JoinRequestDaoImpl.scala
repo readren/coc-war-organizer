@@ -1,20 +1,20 @@
 /**
  *
  */
-package settings.jdbcDaos
+package settings.membership.jdbcDaos
 
-import settings.JoinRequestDao
+import settings.membership.JoinRequestDao
 import auth.models.User
-import settings.Account
-import utils.Transition
-import utils.TransacMode
-import settings.JoinRequestStatus
-import settings.JoinRequest
-import settings.SendJoinRequestCmd
+import settings.account.Account
+import settings.membership.JoinRequestStatus
+import settings.membership.JoinRequest
+import settings.membership.SendJoinRequestCmd
 import utils.JdbcTransacMode
 import anorm._
-import settings.Organization
 import utils.UuidToStatement._
+import anorm.ParameterValue.toParameterValue
+import anorm.SqlParser.str
+
 /**
  * @author Gustavo
  *

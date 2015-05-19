@@ -12,15 +12,15 @@ GET    /authenticate/:provider                         @auth.controllers.SocialA
 POST   /authenticate/:provider                         @auth.controllers.SocialAuthController.authenticate(provider)
 
 
-GET    /account/getAll                                 @settings.AccountCtrl.getAll
-POST   /account/create                                 @settings.AccountCtrl.create
+GET    /account/getAll                                 @settings.account.AccountCtrl.getAll
+POST   /account/create                                 @settings.account.AccountCtrl.create
 
-GET    /membership/getMembershipStatusOf/:accountTag   @settings.MembershipCtrl.getMembershipStatusOf(accountTag)
-POST   /membership/searchOrganizations                 @settings.MembershipCtrl.searchOrganizations
-POST   /membership/sendJoinRequest                     @settings.MembershipCtrl.sendJoinRequest
-POST   /membership/cancelJoinRequest                   @settings.MembershipCtrl.cancelJoinRequest
-POST   /membership/leaveOrganization                   @settings.MembershipCtrl.leaveOrganization
-POST   /membership/createOrganization                  @settings.MembershipCtrl.createOrganization
+GET    /membership/getMembershipStatusOf/:accountTag   @settings.membership.MembershipCtrl.getMembershipStatusOf(accountTag)
+POST   /membership/searchOrganizations                 @settings.membership.MembershipCtrl.searchOrganizations
+POST   /membership/sendJoinRequest                     @settings.membership.MembershipCtrl.sendJoinRequest
+POST   /membership/cancelJoinRequest                   @settings.membership.MembershipCtrl.cancelJoinRequest
+POST   /membership/leaveOrganization                   @settings.membership.MembershipCtrl.leaveOrganization
+POST   /membership/createOrganization                  @settings.membership.MembershipCtrl.createOrganization
 
 
 # Dynamic part of the url

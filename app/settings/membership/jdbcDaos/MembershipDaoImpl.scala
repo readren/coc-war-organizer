@@ -1,21 +1,19 @@
 /**
  *
  */
-package settings.jdbcDaos
+package settings.membership.jdbcDaos
 
 import anorm._
 import anorm.SqlParser._
 import auth.models.User
-import settings.Account
-import settings.MemberDto
-import settings.MembershipDao
-import settings.Organization
-import utils.TransacMode
-import utils.Transition
+import settings.account.Account
+import settings.membership.MemberDto
+import settings.membership.MembershipDao
+import settings.membership.Organization
 import utils.JdbcTransacMode
 import utils.UuidToStatement._
-import settings.Membership
-import settings.Member
+import settings.membership.Membership
+import settings.membership.Member
 
 /**
  * @author Gustavo

@@ -42,9 +42,9 @@ class ApplicationController @Inject() (implicit val env: Environment[User, JWTAu
   def view(template: String) = UserAwareAction { implicit request =>
     template match {
       case "home" => Ok(home.html.home())
-      case "accountSettings" => Ok(settings.html.accountSettings())
-      case "accountChooser" => Ok(settings.html.accountChooser())
-      case "clanMembership" => Ok(settings.html.membership())
+      case "accountSettings" => Ok(settings.html.settings())
+      case "accountChooser" => Ok(settings.account.html.accountChooser())
+      case "clanMembership" => Ok(settings.membership.html.membership())
       case "signUp" => Ok(auth.views.html.signUp())
       case "signIn" => Ok(auth.views.html.signIn())
       case "navigation" => Ok(navigation.html.navigation.render())
