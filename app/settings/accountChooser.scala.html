@@ -1,0 +1,51 @@
+ <!--   @()(implicit request: RequestHeader) -->
+
+<section ng-controller='accountChooserCtrl as acc' class="panel panel-default">
+	<header class="panel-heading">
+		<h4>CoC account</h4>
+	</header>
+	<h4 style="display:flex">
+		<label style="padding-right: .5em;">Current</label>
+		<span style="min-width:14em; border:groove 3px; color:white; background-image:url('/assets/images/wild_oliva.png');" 
+			 class="rea-flip pale-text-shadow" rea-vc-anim rea-vc-anim-set-inter="acc.currentAccountSetterInterceptor" rea-vc-anim-get-inter="acc.currentAccountGetterInterceptor" >
+				{{acc.currentAccountGetterInterceptor(acc.getCurrentAccount).name}}
+			
+		</span>
+	</h4>
+	<div style="display:flex; justify-content:space-around">
+		<div rea-drop-down rea-toggle="acc.toggleAccountSelector" >
+			<button class="btn btn-default"	ng-click="acc.toggleAccountSelector()" ng-disabled="acc.accounts.length == 0">switch</button>
+			<aside rea-drop-down-content class="am-fade" >
+				<table class="table">
+					<thead style="font-style: italic;"><tr><th>name</th><th>description</th></tr></thead>
+					<tbody>
+						<tr ng-repeat="account in acc.accounts"
+							ng-click="acc.setCurrentAccount(account)"
+							ng-class="{ active: account == acc.getCurrentAccount() }">
+							<td class="dark-text-shadow" style="min-width:14em">{{account.name}}</td>
+							<td>{{account.description}}</td>
+						</tr>
+					</tbody>
+				</table>
+			</aside>
+		</div>
+
+		<div style="display:flex; align-content:space-around;" rea-drop-down rea-toggle="acc.toggleAccountAdder">
+			<button class="btn btn-default" ng-click="acc.toggleAccountAdder()"	ng-disabled="acc.accounts.length >= 20">Add</button>
+			<aside rea-drop-down-content class="am-fade" style="right:0; left:inherit;">
+				<form class="form" name="form" style="display:flex; flex-direction: column; align-items: center;">
+					<input placeholder="name" required ng-model='acc.newAccountProject.name'
+						bs-tooltip data-trigger="focus" data-placement="top"
+						data-title="The CoC account name is the name of your village and the name you are seen by other players in the chat window" />
+					<input placeholder="description" ng-model='acc.newAccountProject.description'
+						bs-tooltip data-trigger="focus" data-placement="top"
+						data-title="an optional text to describe the CoC account" />
+					<nav class="actions">
+						<button type="submit" ng-click='form.$valid && acc.addAccount()' class="btn btn-default">proceed</button>
+					</nav>
+				</form>
+			</aside>
+		</div>
+	</div>
+</section>
+

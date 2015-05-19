@@ -12,11 +12,11 @@ app.factory('userService', ['$http', '$auth', '$q', function($http, $auth, $q) {
 	/**Gives a promise of the current user */
 	var getCurrentUserPromise = function () {
 		var deferred = $q.defer();
-		if( !$auth.isAuthenticated())
+		if(!$auth.isAuthenticated()) {
 			deferred.reject('No user is currently authenticated');
-		else if( currentUser != null && currentToken === $auth.getToken())
+		} else if( currentUser !== null && currentToken === $auth.getToken()) {
 			deferred.resolve(currentUser);
-		else {
+		} else {
 			$http.get('/user').then(
 				function(value) {
 					currentUser = value.data;

@@ -1,5 +1,7 @@
 'use strict';
 
+/*global app: false */
+
 app.factory('accountService', ['$http', '$q', '$auth', function($http, $q, $auth) {
 	
 	/** cached accounts */
@@ -16,14 +18,15 @@ app.factory('accountService', ['$http', '$q', '$auth', function($http, $q, $auth
 		if( angular.isArray(accounts) && ownerToken === $auth.getToken()) { //if the accounts were already retrieved, give them from the cache
 			deferred.resolve(accounts);
 		} else { // else, retrieve them from the server
-			$http.get('/accounts').then(
+			$http.get('/account/getAll').then(
 				function(value) {
 					accounts = value.data;
 					ownerToken = $auth.getToken();
-					if(accounts.length > 0)
+					if(accounts.length > 0) {
 						currentAccount = accounts[0];
-					else
+					} else {
 						currentAccount = null;
+					}
 					deferred.resolve(accounts);
 				}, function(reason) {
 					deferred.reject('Retrieval of accounts from server has failed. Reason: ' + reason.data);
@@ -36,12 +39,12 @@ app.factory('accountService', ['$http', '$q', '$auth', function($http, $q, $auth
 	/** adds a new account for current user */
 	var addNewAccountPromise = function(newAccountProyect) {
 		var deferred = $q.defer();
-		$http.post('/addAccount', newAccountProyect).then(
+		$http.post('/account/create', newAccountProyect).then(
 			function(value) {
 				var newAccount = value.data;
-				if( angular.isArray(accounts))
+				if( angular.isArray(accounts)) {
 					accounts = accounts.concat([newAccount]); // note that account reference is changed to facilitate change detection.
-				else {
+				} else {
 					accounts = [newAccount];
 					currentAccount = newAccount;
 				}

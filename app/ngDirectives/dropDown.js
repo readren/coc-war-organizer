@@ -1,8 +1,9 @@
 'use strict';
+/*global app: false */
 
 app.directive('reaDropDown',[function(){
-	var link = function($scope, $element, attrs) {
-		$element.addClass('dropdown');
+	var link = function($scope, $element) {
+		$element.addClass($scope.anchorClass || 'dropdown');
 	};
 	
 	var controller = function($scope) {
@@ -30,7 +31,8 @@ app.directive('reaDropDown',[function(){
 		scope: {
 			show: '=?reaShow', // gives the function that should be called to show all the subordinate contents
 			hide: '=?reaHide', // gives the function that should be called to hide all the subordinate contents
-			toggle: '=?reaToggle' // gives the function that should be called to toggle all the subordinate contents
+			toggle: '=?reaToggle', // gives the function that should be called to toggle all the subordinate contents
+			anchorClass: '@?reaAnchorClass'
 		},
 		link: link,
 		controller: controller
@@ -39,7 +41,7 @@ app.directive('reaDropDown',[function(){
 .directive('reaDropDownContent', ['$animate', '$document', '$timeout', function($animate, $document, $timeout){
 	var link = function($scope, $element, attrs , dropDownCtrl) {
 		dropDownCtrl.addSubordinate($scope);
-		$element.addClass('ng-hide dropdown-menu');
+		$element.addClass('ng-hide '+ ($scope.dropClass || 'dropdown-menu'));
 		var isShown = false;
 		var hide = function() {
 			isShown = false;
@@ -62,7 +64,7 @@ app.directive('reaDropDown',[function(){
 			});
 		};
 		$scope.toggle = function() {
-			isShown ? $scope.hide() : $scope.show();
+			if(isShown) { $scope.hide(); } else { $scope.show(); }
 		};
 	};
 	return {
@@ -71,7 +73,8 @@ app.directive('reaDropDown',[function(){
 		scope: {
 			show: '=?reaShow', // gives the function that should be called to show this subordinate content
 			hide: '=?reaHide', // gives the function that should be called to hide this subordinate content
-			toggle: '=?reaToggle' // gives the function that should be called to toggle this subordinate content
+			toggle: '=?reaToggle', // gives the function that should be called to toggle this subordinate content
+			dropClass: '@?reaDropClass'
 		},
 		link: link
 	};

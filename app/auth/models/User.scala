@@ -17,7 +17,7 @@ import play.api.libs.json.Json
  * @param avatarURL Maybe the avatar URL of the authenticated provider.
  */
 case class User(
-  userID: UUID,
+  id: User.Id,
   loginInfo: LoginInfo,
   firstName: Option[String],
   lastName: Option[String],
@@ -29,7 +29,7 @@ case class User(
  * The companion object.
  */
 object User {
-
+	type Id = UUID
   /**
    * Converts the [User] object to Json and vice versa.
    */

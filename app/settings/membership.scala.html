@@ -1,0 +1,84 @@
+@()(implicit request: RequestHeader)
+
+<section ng-controller='clanMembershipCtrl as cmc' class="panel panel-default">
+	<header class="panel-heading">
+		<h4>Organization membership</h4>
+	</header>
+	<p>state='{{cmc.state}}'</p>
+	
+	<p ng-show="cmc.state=='initializing'" class="flexCenteredColumn am-fade-and-scale">Initializing...</p>
+	
+	<div ng-show="cmc.state=='initHasFailed'" class="flexCenteredColumn am-fade-and-scale">
+		<p>We are ashamed! The initialization has failed.</p>
+		<button class="btn" ng-click="cmc.init()">retry</button>
+	</div>
+	
+	<div ng-show="cmc.state=='alone'" class="flexCenteredColumn am-fade-and-scale">
+		<p style="word-wrap:normal">This CoC account has no organization. You can create a new organization or join to an existing one.</p>
+		<nav class="actions" style="display:flex; flex-flow: row wrap; justify-content:space-around; width:100%;">	
+			<div rea-drop-down rea-toggle="cmc.toggleOrganizationJoiningForm" >
+				<button class="btn btn-default"	ng-click="cmc.toggleOrganizationJoiningForm()">join to an existing organization</button>
+				<aside rea-drop-down-content class="am-fade" >
+					<form>
+						<input ng-model="cmc.searchOrganizationsCmd.clanName" placeholder='@Messages("settings.clanMembership.clanName.placeholder")'
+							bs-tooltip data-title='@Messages("settings.clanMembership.clanName.tooltip")'/>
+						<input ng-model="cmc.searchOrganizationsCmd.clanTag" placeholder='@Messages("settings.clanMembership.clanTag.placeholder")'
+							bs-tooltip data-title='@Messages("settings.clanMembership.clanTag.tootip")' />
+						<input ng-model="cmc.searchOrganizationsCmd.description" placeholder='@Messages("settings.clanMembership.organizationDescription.placeholder")'
+							bs-tooltip data-title='@Messages("settings.clanMembership.organizationDescription.tooltip")'/>
+					</form>
+					<div rea-drop-down rea-show="cmc.showSearchResult" rea-hide="cmc.hideSearchResult">
+						<button ng-click='cmc.searchOrganizations($event)' class="btn btn-default">search</button>
+						<aside rea-drop-down-content class="am-fade">
+							<p ng-show="cmc.aSearchIsInProgress">Searching...</p>
+							<table ng-show="!cmc.aSearchIsInProgress" class="table">
+								<thead style="font-style: italic;"><tr><th>clan name</th><th>clan identifier</th><th>organization description</th></tr></thead>
+								<tbody>
+									<tr ng-repeat="organization in cmc.searchResult" ng-click="cmc.sendJoinRequest(organization)">
+										<td class="dark-text-shadow" style="min-width:14em">{{organization.clanName}}</td>
+										<td>{{organization.clanTag}}</td>
+										<td>{{organization.description}}</td>
+									</tr>
+								</tbody>
+							</table>
+						</aside>
+					</div>
+					
+				</aside>
+			</div>		
+		
+		
+			<div rea-drop-down rea-toggle="cmc.toggleOrganizationCreationForm" rea-hide="cmc.hideOrganizationCreationForm">
+				<button class="btn btn-default"	ng-click="cmc.toggleOrganizationCreationForm()">create a new organization</button>
+				<aside rea-drop-down-content class="am-fade">
+					<form name="form">
+						<input ng-model="cmc.createOrganizationCmd.clanName" placeholder='@Messages("settings.clanMembership.clanName.placeholder")' required
+							bs-tooltip data-title='@Messages("settings.clanMembership.clanName.tooltip")'/>
+						<input ng-model="cmc.createOrganizationCmd.clanTag" placeholder='@Messages("settings.clanMembership.clanTag.placeholder")' required
+							bs-tooltip data-title='@Messages("settings.clanMembership.clanTag.tootip")' />
+						<input ng-model="cmc.createOrganizationCmd.description" placeholder='@Messages("settings.clanMembership.organizationDescription.placeholder")'
+							bs-tooltip data-title='@Messages("settings.clanMembership.organizationDescription.tooltip")'/>
+						<button ng-click='form.$valid && cmc.createOrganization()' class="btn btn-default">proceed</button>
+					</form>
+				</aside>
+			</div>		
+		</nav>
+	</div>
+	
+	<div ng-show="cmc.state=='rejected'" class="flexCenteredColumn am-fade-and-scale">
+		<p>Sorry. Your join request was rejected.<p>
+		<p>The rejection message was: {{cmc.rejectionMsg}}<p>
+		<button class="btn" ng-click="cmc.cancelJoinRequest()">Ok</button>
+	</div>
+	
+	<div ng-show="cmc.state=='waitingAcceptance'" class="flexCenteredColumn am-fade-and-scale">
+		<p>Waiting a leader of the "<b>{{cmc.pretendedOrganization.clanName}}</b> <i>{{cmc.pretendedOrganization.description}}</i>" organization accepts you.</p>
+		<button class="btn" ng-click="cmc.cancelJoinRequest()">cancel join request</button>
+	</div>
+	
+	<div ng-show="cmc.state=='joined'" class="flexCenteredColumn am-fade-and-scale">
+		<p>Current organization: {{cmc.currentOrganization.clanName}}</p>
+		<p>Member name: {{cmc.memberDto.name}}</p>
+		<button class="btn" ng-click="cmc.leaveOrganization()">leave the organization</button>
+	</div>
+</section>

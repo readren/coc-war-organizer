@@ -1,4 +1,6 @@
 'use strict';
+/*global app: false */
+
 
 app.provider('reaVcAnimService', function() {
 	var defaultProfileKey = 'change';
@@ -9,29 +11,30 @@ app.provider('reaVcAnimService', function() {
 	this.$get = ['$animate', function($animate) {
 		var profiles = {
 			leaveEnter: {
-				prelude: function($scope, $element, attrs){
+				prelude: function($scope, $element){
 					return $animate.animate($element, {}, {}, 'ng-leave', {tempClasses: 'ng-leave-animate'});
 				},
-				postude:function($scope, $element, attrs){
+				postude:function($scope, $element){
 					return $animate.animate($element, {}, {}, 'ng-enter', {tempClasses: 'ng-enter-animate'});
 				}
 			},
 			hideShow: {
-				prelude: function($scope, $element, attrs){
+				prelude: function($scope, $element){
 					return $animate.addClass($element, 'ng-hide', {tempClasses: 'ng-hide-animate'});
 				},
-				postlude:function($scope, $element, attrs){
+				postlude:function($scope, $element){
 					return $animate.removeClass($element, 'ng-hide', {tempClasses: 'ng-hide-animate'});
 				}
 			},
 			change: {
-				prelude: function($scope, $element, attrs){
+				prelude: function($scope, $element){
 					return $animate.addClass($element, 'rea-change', {tempClasses: 'rea-change-animate'});
 				},
-				postlude:function($scope, $element, attrs){
+				postlude:function($scope, $element){
 					return $animate.removeClass($element, 'rea-change', {tempClasses: 'rea-change-animate'});
 				}
-			}};
+			}
+		};
 		this.addProfile = function(key, profile) {
 			profiles = angular.extend(profiles, {key: profile});
 		};
@@ -54,10 +57,10 @@ app.directive('reaVcAnim',['$q', 'reaVcAnimService', function($q, reaVcAnimServi
 		$scope.setterInterceptor = function(valueSetter) { // note that the context of this function might not be the scope of this directive. Usually would be a parent scope. So, 'this' must not be used.
 			isPreludeTime = true;
 			var valueSetterParams = [].slice.apply(arguments).slice(1, arguments.length);
-			var profile = angular.isString($scope.profileKey) ? reaVcAnimService.getProfile($scope.profileKey) : reaVcAnimService.defaultProfile;   
-			
+			var profile = angular.isString($scope.profileKey) ? reaVcAnimService.getProfile($scope.profileKey) : reaVcAnimService.defaultProfile;
+
 			var preludeAnimPromise = profile.prelude($scope, $element, attrs); // the prelude animation is started before the valueSetter in order to support the case when the valueSetter is slow and synchronous
-			var valueSetterResult = valueSetter.apply(this, valueSetterParams);  
+			var valueSetterResult = valueSetter.apply(this, valueSetterParams);
 			var valueChangePromise = $q.when(valueSetterResult);
 			valueChangePromise['finally'](function(){
 				preludeAnimPromise.then(function(){
@@ -95,7 +98,7 @@ app.directive('reaVcAnim',['$q', 'reaVcAnimService', function($q, reaVcAnimServi
 
 
 app.directive('reaChangeAnim',['$animate', '$q', function($animate, $q){
-	var link = function($scope, $element, attrs){
+	var link = function($scope, $element){
 		$scope.fire = function(changer) {
 			var preChangeAnim = $scope.preChangeAnim();
 			var postChangeAnim = $scope.postChangeAnim();
@@ -103,8 +106,9 @@ app.directive('reaChangeAnim',['$animate', '$q', function($animate, $q){
 				return (
 					$q.when(changer())
 					['finally'](function() {
-						if(angular.isObject(postChangeAnim))
+						if(angular.isObject(postChangeAnim)) {
 							$animate.animate($element, postChangeAnim.from, postChangeAnim.to, postChangeAnim.class, postChangeAnim.options);
+						}
 					}));
 			};
 			return (
@@ -129,7 +133,7 @@ app.directive('reaChangeAnim',['$animate', '$q', function($animate, $q){
 }]);
 
 app.directive('reaAnim',['$animate','$q', function($animate, $q){
-	var link = function($scope, $element, attrs) {
+	var link = function($scope, $element) {
 		$scope.fire = function() {
 			var promise = $q.when(true);
 			angular.forEach($scope.frames(), function(frame) {

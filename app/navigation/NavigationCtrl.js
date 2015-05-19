@@ -29,10 +29,10 @@ app.controller('NavigationCtrl', ['$rootScope', '$scope', '$auth', 'userService'
 		return $auth.isAuthenticated();
 	};
 	$scope.isIdentifying = function() {
-		return $auth.isAuthenticated() && $rootScope.user == null;
+		return $auth.isAuthenticated() && $rootScope.user === null;
 	};
 	$scope.isIdentifyed = function() {
-		return $auth.isAuthenticated() && $rootScope.user != null;
+		return $auth.isAuthenticated() && $rootScope.user !== null;
 	};
 
 

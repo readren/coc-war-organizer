@@ -5,9 +5,9 @@
 /**
  * The home controller.
  */
-app.controller('HomeCtrl', ['$animate', '$scope', function($animate,$scope) {
+app.controller('HomeCtrl', ['$animate', function($animate) {
 	var hc = this;
-	var $element = angular.element("#pepe");
+	var $element = angular.element('#pepe');
 	hc.isVisible = true;
 	hc.onClick = function() {
 		if(hc.isVisible) {

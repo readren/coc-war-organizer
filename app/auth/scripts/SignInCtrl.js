@@ -13,7 +13,8 @@ app.controller('SignInCtrl', [ '$scope', '$rootScope', 'userService', '$alert', 
 	$scope.submit = function() {
 		$auth.login({
 			email : $scope.email,
-			password : $scope.password })
+			password : $scope.password
+		})
 		.then(userService.getCurrentUserPromise)
 		.then(
 			function(value){
@@ -46,5 +47,5 @@ app.controller('SignInCtrl', [ '$scope', '$rootScope', 'userService', '$alert', 
 				$alert({ content : response.data.message, animation : 'fadeZoomFadeDown', type : 'material', duration : 3 });
 				$rootScope.user = null;
 			});
-		};
-} ]);
+	};
+}]);

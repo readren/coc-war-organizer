@@ -2,24 +2,31 @@
 # This file defines all application routes (Higher priority routes first)
 # ~~~~
 
-GET    /                           com.tuplejump.playYeoman.Yeoman.index
+GET    /                                               com.tuplejump.playYeoman.Yeoman.index
 
-GET    /user                       @auth.controllers.ApplicationController.user
-GET    /signOut                    @auth.controllers.ApplicationController.signOut
-POST   /signIn                     @auth.controllers.CredentialsAuthController.authenticate
-POST   /signUp                     @auth.controllers.SignUpController.signUp
-GET    /authenticate/:provider     @auth.controllers.SocialAuthController.authenticate(provider)
-POST   /authenticate/:provider     @auth.controllers.SocialAuthController.authenticate(provider)
+GET    /user                                           @auth.controllers.ApplicationController.user
+GET    /signOut                                        @auth.controllers.ApplicationController.signOut
+POST   /signIn                                         @auth.controllers.CredentialsAuthController.authenticate
+POST   /signUp                                         @auth.controllers.SignUpController.signUp
+GET    /authenticate/:provider                         @auth.controllers.SocialAuthController.authenticate(provider)
+POST   /authenticate/:provider                         @auth.controllers.SocialAuthController.authenticate(provider)
 
 
-GET    /accounts                   @common.AccountCtrl.accounts
-POST   /addAccount	   			   @common.AccountCtrl.addAccount
+GET    /account/getAll                                 @settings.AccountCtrl.getAll
+POST   /account/create                                 @settings.AccountCtrl.create
+
+GET    /membership/getMembershipStatusOf/:accountTag   @settings.MembershipCtrl.getMembershipStatusOf(accountTag)
+POST   /membership/searchOrganizations                 @settings.MembershipCtrl.searchOrganizations
+POST   /membership/sendJoinRequest                     @settings.MembershipCtrl.sendJoinRequest
+POST   /membership/cancelJoinRequest                   @settings.MembershipCtrl.cancelJoinRequest
+POST   /membership/leaveOrganization                   @settings.MembershipCtrl.leaveOrganization
+POST   /membership/createOrganization                  @settings.MembershipCtrl.createOrganization
 
 
 # Dynamic part of the url
-GET    /views/$template<.+>.html   @auth.controllers.ApplicationController.view(template)
+GET    /views/$template<.+>.html                       @auth.controllers.ApplicationController.view(template)
 
 # Map static resources from the /public folder to the /assets URL path
-GET    /assets/*file               controllers.Assets.at(path="/public", file)
+GET    /assets/*file                                   controllers.Assets.at(path="/public", file)
 
-->     /                           yeoman.Routes
+->     /                                               yeoman.Routes

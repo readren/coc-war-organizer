@@ -1,13 +1,12 @@
 package auth.controllers
 
 import javax.inject.Inject
-
 import com.mohiva.play.silhouette.api.{ Environment, LogoutEvent, Silhouette }
 import com.mohiva.play.silhouette.impl.authenticators.JWTAuthenticator
 import auth.models.User
 import play.api.libs.json.Json
-
 import scala.concurrent.Future
+import play.api.Logger
 
 /**
  * The basic application controller.
@@ -44,6 +43,8 @@ class ApplicationController @Inject() (implicit val env: Environment[User, JWTAu
     template match {
       case "home" => Ok(home.html.home())
       case "accountSettings" => Ok(settings.html.accountSettings())
+      case "accountChooser" => Ok(settings.html.accountChooser())
+      case "clanMembership" => Ok(settings.html.membership())
       case "signUp" => Ok(auth.views.html.signUp())
       case "signIn" => Ok(auth.views.html.signIn())
       case "navigation" => Ok(navigation.html.navigation.render())

@@ -5,3 +5,10 @@ invalid.data = Invalid data!
 access.denied = Access denied!
 user.exists = There already exists a user with this email!
 could.not.authenticate = Could not authenticate with social provider! Please try again!
+
+settings.clanMembership.clanName.placeholder = clan name
+settings.clanMembership.clanName.tooltip = the name of the CoC clan this organization would manage
+settings.clanMembership.clanTag.placeholder = clan identifier
+settings.clanMembership.clanTag.tootip = the clan identifier found in the clan's info window
+settings.clanMembership.organizationDescription.placeholder = organization description
+settings.clanMembership.organizationDescription.tooltip = an optional text to describe this organization

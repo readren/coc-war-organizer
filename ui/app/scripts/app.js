@@ -16,7 +16,7 @@ var app = angular.module('uiApp', [
 /**
  * The run configuration.
  */
-app.run(function($rootScope, $auth, $state, $timeout) {
+app.run(function($auth) {
 	if ($auth.isAuthenticated()) {
 		$auth.logout();
 	}
@@ -27,16 +27,24 @@ app.run(function($rootScope, $auth, $state, $timeout) {
  */
 app.config(function ($urlRouterProvider, $stateProvider, $httpProvider, $authProvider) {
 
-  $urlRouterProvider
-    .when('', 'signIn')
-    .when('/', 'signIn');
+	
+	$urlRouterProvider
+		.when(/.*/, [ '$auth', function($auth) {
+			if ($auth.isAuthenticated()) {
+				return false;
+			} else {
+				return 'signIn';
+			}
+		}]).when('', 'signIn')
+		.when('/', 'signIn');
 
   $stateProvider
-	.state('accountSettings',{url: '/accountSettings', templateUrl:'/views/accountSettings.html'})
     .state('home', { url: '/home', templateUrl: '/views/home.html' })
     .state('signUp', { url: '/signUp', templateUrl: '/views/signUp.html' })
     .state('signIn', { url: '/signIn', templateUrl: '/views/signIn.html' })
-    .state('signOut', { url: '/signOut', template: null,  controller: 'SignOutCtrl' });
+    .state('signOut', { url: '/signOut', template: null,  controller: 'SignOutCtrl' })
+	.state('accountSettings',{url: '/accountSettings', templateUrl:'/views/accountSettings.html'})
+	;
 
   $httpProvider.interceptors.push(function($q, $injector) {
     return {
@@ -61,9 +69,9 @@ app.config(function ($urlRouterProvider, $stateProvider, $httpProvider, $authPro
   // Auth config
   $authProvider.httpInterceptor = true; // Add Authorization header to HTTP request
   $authProvider.loginOnSignup = true;
-  $authProvider.loginRedirect = '/accountSettings';
+  $authProvider.loginRedirect = 'accountSettings';
   $authProvider.logoutRedirect = '/';
-  $authProvider.signupRedirect = '/home';
+  $authProvider.signupRedirect = 'home';
   $authProvider.loginUrl = '/signIn';
   $authProvider.signupUrl = '/signUp';
   $authProvider.loginRoute = '/signIn';

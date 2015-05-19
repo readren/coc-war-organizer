@@ -66,7 +66,7 @@ update auth_user set
 	full_name = ${user.fullName.orNull: String},
 	email = ${user.email.orNull: String},
 	avatar_url = ${user.avatarURL.orNull: String}
-where user_id = ${user.userID}::uuid""";
+where user_id = ${user.id}::uuid""";
 			val count = DB.withConnection { implicit connection =>
 				sql.executeUpdate()
 			}
@@ -88,7 +88,7 @@ insert into auth_user (
 	email,
 	avatar_url
 ) values (
-	${user.userID}::uuid,
+	${user.id}::uuid,
   ${user.loginInfo.providerID},
 	${user.loginInfo.providerKey},
 	${user.firstName.orNull: String},
