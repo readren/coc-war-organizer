@@ -31,4 +31,3 @@ trait InTransacMode extends TransacMode {
 	def rollback: OutTransacMode
 }
 
-

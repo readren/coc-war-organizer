@@ -15,12 +15,16 @@ POST   /authenticate/:provider                         @auth.controllers.SocialA
 GET    /account/getAll                                 @settings.account.AccountCtrl.getAll
 POST   /account/create                                 @settings.account.AccountCtrl.create
 
-GET    /membership/getMembershipStatusOf/:accountTag   @settings.membership.MembershipCtrl.getMembershipStatusOf(accountTag)
+GET    /membership/getMembershipStatusOf/:accountTag   @settings.membership.MembershipCtrl.getMembershipStatusOf(accountTag:Int)
 POST   /membership/searchOrganizations                 @settings.membership.MembershipCtrl.searchOrganizations
 POST   /membership/sendJoinRequest                     @settings.membership.MembershipCtrl.sendJoinRequest
 POST   /membership/cancelJoinRequest                   @settings.membership.MembershipCtrl.cancelJoinRequest
 POST   /membership/leaveOrganization                   @settings.membership.MembershipCtrl.leaveOrganization
 POST   /membership/createOrganization                  @settings.membership.MembershipCtrl.createOrganization
+
+POST   /log/getEventsAfter                             @log.LogCtrl.getEventsAfter
+POST   /log/joinRequest/accept                         @log.events.joinRequest.JoinRequestCtrl.accept
+POST   /log/joinRequest/reject                         @log.events.joinRequest.JoinRequestCtrl.reject
 
 
 # Dynamic part of the url

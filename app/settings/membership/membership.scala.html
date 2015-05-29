@@ -2,9 +2,8 @@
 
 <section ng-controller='clanMembershipCtrl as cmc' class="panel panel-default">
 	<header class="panel-heading">
-		<h4>Organization membership</h4>
+		<h4>Organization</h4>
 	</header>
-	<p>state='{{cmc.state}}'</p>
 	
 	<p ng-show="cmc.state=='initializing'" class="flexCenteredColumn am-fade-and-scale">Initializing...</p>
 	
@@ -15,43 +14,40 @@
 	
 	<div ng-show="cmc.state=='alone'" class="flexCenteredColumn am-fade-and-scale">
 		<p style="word-wrap:normal">This CoC account has no organization. You can create a new organization or join to an existing one.</p>
-		<nav class="actions" style="display:flex; flex-flow: row wrap; justify-content:space-around; width:100%;">	
-			<div rea-drop-down rea-toggle="cmc.toggleOrganizationJoiningForm" >
-				<button class="btn btn-default"	ng-click="cmc.toggleOrganizationJoiningForm()">join to an existing organization</button>
-				<aside rea-drop-down-content class="am-fade" >
-					<form>
+		<nav class="actions buttons-bar">	
+			<div rea-drop-down rea-show="cmc.showOrganizationJoiningForm" rea-hide="cmc.hideOrganizationJoiningForm">
+				<button class="btn btn-default"	ng-click="cmc.showOrganizationJoiningForm()">join to an existing organization</button>
+					<form rea-drop-down-content class="am-fade flexCenteredColumn" >
 						<input ng-model="cmc.searchOrganizationsCmd.clanName" placeholder='@Messages("settings.clanMembership.clanName.placeholder")'
 							bs-tooltip data-title='@Messages("settings.clanMembership.clanName.tooltip")'/>
 						<input ng-model="cmc.searchOrganizationsCmd.clanTag" placeholder='@Messages("settings.clanMembership.clanTag.placeholder")'
 							bs-tooltip data-title='@Messages("settings.clanMembership.clanTag.tootip")' />
 						<input ng-model="cmc.searchOrganizationsCmd.description" placeholder='@Messages("settings.clanMembership.organizationDescription.placeholder")'
 							bs-tooltip data-title='@Messages("settings.clanMembership.organizationDescription.tooltip")'/>
+						<div rea-drop-down rea-show="cmc.showSearchResult" rea-hide="cmc.hideSearchResult">
+							<button ng-click='cmc.searchOrganizations($event)' class="btn btn-default">search</button>
+							<aside rea-drop-down-content class="am-fade">
+								<p ng-show="cmc.aSearchIsInProgress">Searching...</p>
+								<table ng-show="!cmc.aSearchIsInProgress" class="table">
+									<thead style="font-style: italic;"><tr><th>clan name</th><th>clan tag</th><th>description</th></tr></thead>
+									<tbody>
+										<tr ng-repeat="organization in cmc.searchResult" ng-click="cmc.sendJoinRequest(organization)">
+											<td class="dark-text-shadow" style="min-width:14em">{{organization.clanName}}</td>
+											<td>{{organization.clanTag}}</td>
+											<td>{{organization.description}}</td>
+										</tr>
+									</tbody>
+								</table>
+							</aside>
+						</div>
 					</form>
-					<div rea-drop-down rea-show="cmc.showSearchResult" rea-hide="cmc.hideSearchResult">
-						<button ng-click='cmc.searchOrganizations($event)' class="btn btn-default">search</button>
-						<aside rea-drop-down-content class="am-fade">
-							<p ng-show="cmc.aSearchIsInProgress">Searching...</p>
-							<table ng-show="!cmc.aSearchIsInProgress" class="table">
-								<thead style="font-style: italic;"><tr><th>clan name</th><th>clan identifier</th><th>organization description</th></tr></thead>
-								<tbody>
-									<tr ng-repeat="organization in cmc.searchResult" ng-click="cmc.sendJoinRequest(organization)">
-										<td class="dark-text-shadow" style="min-width:14em">{{organization.clanName}}</td>
-										<td>{{organization.clanTag}}</td>
-										<td>{{organization.description}}</td>
-									</tr>
-								</tbody>
-							</table>
-						</aside>
-					</div>
 					
-				</aside>
 			</div>		
 		
 		
 			<div rea-drop-down rea-toggle="cmc.toggleOrganizationCreationForm" rea-hide="cmc.hideOrganizationCreationForm">
 				<button class="btn btn-default"	ng-click="cmc.toggleOrganizationCreationForm()">create a new organization</button>
-				<aside rea-drop-down-content class="am-fade">
-					<form name="form">
+					<form name="form" rea-drop-down-content class="am-fade flexCenteredColumn">
 						<input ng-model="cmc.createOrganizationCmd.clanName" placeholder='@Messages("settings.clanMembership.clanName.placeholder")' required
 							bs-tooltip data-title='@Messages("settings.clanMembership.clanName.tooltip")'/>
 						<input ng-model="cmc.createOrganizationCmd.clanTag" placeholder='@Messages("settings.clanMembership.clanTag.placeholder")' required
@@ -60,7 +56,6 @@
 							bs-tooltip data-title='@Messages("settings.clanMembership.organizationDescription.tooltip")'/>
 						<button ng-click='form.$valid && cmc.createOrganization()' class="btn btn-default">proceed</button>
 					</form>
-				</aside>
 			</div>		
 		</nav>
 	</div>
@@ -77,8 +72,14 @@
 	</div>
 	
 	<div ng-show="cmc.state=='joined'" class="flexCenteredColumn am-fade-and-scale">
-		<p>Current organization: {{cmc.currentOrganization.clanName}}</p>
-		<p>Member name: {{cmc.memberDto.name}}</p>
+		<h4 style="display:flex">
+			<label style="padding-right: .5em;">Current</label>
+			<span class="chosen-item">{{cmc.currentOrganization.clanName}}</span>
+		</h4>
+		<div> 
+			<label style="padding-right: .5em;">Your member name</label>
+			<span class="chosen-item">{{cmc.memberDto.name}}</span>
+		</div>
 		<button class="btn" ng-click="cmc.leaveOrganization()">leave the organization</button>
 	</div>
 </section>

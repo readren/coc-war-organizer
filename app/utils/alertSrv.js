@@ -16,6 +16,16 @@ app.factory('alertSrv', ['$alert', function($alert){
 		},
 		danger: function(message) {
 			$alert({ type : 'danger', title:'Error', content: message, animation : animation, duration : 0});
+		},
+		/**Gives a function that receives a message and shows it using one of the other operations of this service.
+		 * @param type a string that determines which operation to use. Valid values are: 'success', 'info', 'warning', 'danger'.
+		 * @param prefix a string that would be prepended to the message received by the given function
+		 * @param sufix a string that would be appended to the message received by the given function*/
+		build: function(type, prefix, sufix) {
+			var srv = this;
+			return function(main) {
+				srv[type]((prefix?prefix:'') + (main?main:'') + (sufix?sufix:''));
+			};
 		}
 	};
 }]);

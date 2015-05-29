@@ -11,9 +11,9 @@ import play.api.Logger
  * @author Gustavo
  */
 trait JdbcTransacMode extends TransacMode {
+	val logger = Logger(classOf[JdbcTransacMode])
 	/** Given [[Connection]] is referentially opaque, any calling code will be also.  */
 	def getConnection(): Connection
-	val logger = Logger(classOf[JdbcTransacMode])
 	def inConnection[X](block: Connection => X): Transition[JdbcTransacMode, X]
 }
 
@@ -35,7 +35,7 @@ class OutJdbcTransacMode(dataSource: DataSource) extends JdbcTransacMode with Ou
 	override def begin = new InJdbcTransacMode(dataSource)
 	override def getConnection() = dataSource.getConnection().ensuring(_.getAutoCommit())
 
-	def inConnection[X](block: Connection => X) = Transition[JdbcTransacMode, X] { jdbcTransacState =>
+	override def inConnection[X](block: Connection => X) = Transition[JdbcTransacMode, X] { jdbcTransacState =>
 		val connection = jdbcTransacState.asInstanceOf[JdbcTransacMode].getConnection()
 		try {
 			TransitionResult(jdbcTransacState, block(connection))
@@ -78,7 +78,7 @@ class InJdbcTransacMode(dataSource: DataSource) extends JdbcTransacMode with InT
 		new OutJdbcTransacMode(dataSource)
 	}
 
-	def inConnection[X](block: Connection => X) = Transition[JdbcTransacMode, X] { jdbcTransacState =>
+	override def inConnection[X](block: Connection => X) = Transition[JdbcTransacMode, X] { jdbcTransacState =>
 		TransitionResult(jdbcTransacState, block(jdbcTransacState.asInstanceOf[JdbcTransacMode].getConnection()))
 	}
 }

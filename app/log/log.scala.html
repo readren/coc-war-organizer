@@ -1,0 +1,13 @@
+<!-- @()(implicit request: RequestHeader)  -->
+
+<section ng-controller='logCtrl as ctrl' class="panel panel-default">
+	<header class="panel-heading">
+		<h2 style="display:inline">Log</h2>
+		<button ng-click="ctrl.refresh()" style="margin-left:1em">refresh</button>
+	</header>
+	<div style="display: flex; flex-flow: column nowrap; justify-content: flex-start">
+		<div ng-repeat="event in ctrl.events" style="border-top: 1px solid black;">
+			<div ng-include="'views/'+event.type+'.html'"></div>
+		</div>
+	</div>
+</section>

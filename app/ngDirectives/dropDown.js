@@ -47,8 +47,11 @@ app.directive('reaDropDown',[function(){
 			isShown = false;
 			$animate.addClass($element, 'ng-hide', {tempClasses: 'ng-hide-animate'});
 		};
-		var hideHandler = function() {
-			$scope.$apply(hide);
+		var hideHandler = function(event) {
+			if( !(event.target.compareDocumentPosition($element[0]) & Node.DOCUMENT_POSITION_CONTAINS)) {
+				$scope.$apply(hide);
+				$document.off('click', hideHandler);
+			}
 		};
 
 		// Exposed API
@@ -60,7 +63,7 @@ app.directive('reaDropDown',[function(){
 			isShown = true;
 			$animate.removeClass($element, 'ng-hide', {tempClasses: 'ng-hide-animate'});
 			$timeout(function() {
-				$document.one('click', hideHandler);
+				$document.on('click', hideHandler);
 			});
 		};
 		$scope.toggle = function() {

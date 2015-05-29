@@ -8,10 +8,10 @@ import play.api.Play.current
 import play.api.db.DB
 import utils.JdbcTransacTransitionExec
 import utils.TransacTransitionExec
-import settings.account.AccountService
+import settings.account.AccountSrv
 import settings.account.AccountDao
 import settings.account.AccountDaoImpl
-import settings.account.AccountServiceImpl
+import settings.account.AccountSrvImpl
 import settings.membership.MembershipSrv
 import settings.membership.OrganizationDao
 import settings.membership.MembershipSrvImpl
@@ -32,7 +32,7 @@ class SettingsModule extends AbstractModule with ScalaModule {
 	 * Configures the module.
 	 */
 	def configure() {
-		bind[AccountService].to[AccountServiceImpl]
+		bind[AccountSrv].to[AccountSrvImpl]
 		bind[AccountDao].to[AccountDaoImpl]
 
 		bind[MembershipSrv].to[MembershipSrvImpl]

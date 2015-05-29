@@ -19,12 +19,6 @@ body {
 	background-image: url('/assets/images/wavegrid.png');
 }
 
-.flexCenteredColumn {
-	display:flex;
-	flex-flow: column nowrap;
-	align-items:center;
-	justify-content:flex-start;
-}
 
 form {
 	
@@ -196,13 +190,10 @@ a {
   }
 }
 
+/****************My classes ********************/
 
 .dropdown-menu {
 	display:block;
-}
-
-.dib {
-	display:inline-block;
 }
 
 .dark-text-shadow {
@@ -212,6 +203,34 @@ a {
 	text-shadow: rgb(0,0,0) 1px 1px 3px;
 }
 
+.chosen-item {
+	@extends .pale-text-shadow;
+	min-width: 14em;
+	border: groove 3px;
+	color: white;
+	background-image:url('/assets/images/wild_oliva.png');
+}
+
+.flexCenteredColumn {
+	display: flex;
+	flex-flow: column wrap;
+	align-items: center;
+}
+
+.flexBaselineRow {
+	display: flex;
+	flex-flow: row wrap;
+	align-items: baseline;
+}
+
+.buttons-bar {
+	display:flex;
+	flex-flow:row wrap;
+	justify-content:space-around;
+	width:100%;
+}
+
+/*****My Animations******/
 
 .am-fade {
   -webkit-animation-duration: 0.6s;

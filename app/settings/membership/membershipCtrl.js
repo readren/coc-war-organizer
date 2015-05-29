@@ -1,13 +1,13 @@
 'use strict';
 /*global app: false */
 
-app.controller('clanMembershipCtrl', ['accountService', 'membershipSrv', 'alertSrv', '$rootScope', function(accountService, membershipSrv, alertSrv, $rootScope) {
+app.controller('clanMembershipCtrl', ['accountSrv', 'membershipSrv', 'alertSrv', '$rootScope', function(accountSrv, membershipSrv, alertSrv, $rootScope) {
 	//states: accountLess, initializing, initHasFailed, alone, waitingAcceptance, rejected, joined
 	var cmc = this;
 	
 	var currentAccount = null;
 	$rootScope.$watch(function(){
-		return accountService.getCurrentAccount();
+		return accountSrv.getCurrentAccount();
 	}, function(newAccount) {
 		currentAccount = newAccount;
 		cmc.initialize();
@@ -24,7 +24,7 @@ app.controller('clanMembershipCtrl', ['accountService', 'membershipSrv', 'alertS
 		} else if( response.organization ) {
 			cmc.pretendedOrganization = response.organization;
 			alertSrv.info('Your join request was sent. Please wait a leader accepts you.');
-			cmc.state = 'waitingAcceptance';			
+			cmc.state = 'waitingAcceptance';
 		} else {
 			cmc.state = 'alone';
 		}
@@ -48,9 +48,8 @@ app.controller('clanMembershipCtrl', ['accountService', 'membershipSrv', 'alertS
 	cmc.initialize();
 	
 	cmc.searchOrganizationsCmd = {};
-	cmc.searchOrganizations = function($event){
+	cmc.searchOrganizations = function() {
 		cmc.searchResult = [];
-		$event.stopPropagation();
 		cmc.aSearchIsInProgress = true;
 		cmc.showSearchResult();
 		membershipSrv.searchOrganizationsPromise(cmc.searchOrganizationsCmd).then(
@@ -65,7 +64,9 @@ app.controller('clanMembershipCtrl', ['accountService', 'membershipSrv', 'alertS
 	};
 	
 	cmc.sendJoinRequest = function(organization) {
-		membershipSrv.sendJoinRequestPromise(accountService.getCurrentAccount(), organization).then(
+		cmc.hideSearchResult();
+		cmc.hideOrganizationJoiningForm();
+		membershipSrv.sendJoinRequestPromise(accountSrv.getCurrentAccount(), organization).then(
 			treatMembershipStatus,
 			function(reason){
 				alertSrv.danger('Unable to send the join request because: ' + reason);
@@ -73,7 +74,7 @@ app.controller('clanMembershipCtrl', ['accountService', 'membershipSrv', 'alertS
 	};
 	
 	cmc.checkJoinResponse = function() {
-		membershipSrv.getMembershipStatusOfPromise(accountService.getCurrentAccount()).then(
+		membershipSrv.getMembershipStatusOfPromise(accountSrv.getCurrentAccount()).then(
 			treatMembershipStatus,
 			function(reason){
 				alertSrv.danger('Unable to check the join request\'s response because: ' + reason);
@@ -81,17 +82,15 @@ app.controller('clanMembershipCtrl', ['accountService', 'membershipSrv', 'alertS
 	};
 	
 	cmc.cancelJoinRequest = function() {
-		membershipSrv.cancelJoinRequestPromise(accountService.getCurrentAccount()).then(
-			function() {
-				cmc.state = 'alone';
-			},
+		membershipSrv.cancelJoinRequestPromise(accountSrv.getCurrentAccount()).then(
+			treatMembershipStatus,
 			function(reason) {
 				alertSrv.danger('Unable to cancel join request because: ' + reason);
 			});
 	};
 	
 	cmc.leaveOrganization = function() {
-		membershipSrv.leaveOrganizationPromise(accountService.getCurrentAccount()).then(
+		membershipSrv.leaveOrganizationPromise(accountSrv.getCurrentAccount()).then(
 			treatMembershipStatus,
 			function(reason) {
 				alertSrv.danger('Unable to leave the organization because: '+ reason);
@@ -101,7 +100,7 @@ app.controller('clanMembershipCtrl', ['accountService', 'membershipSrv', 'alertS
 	
 	cmc.createOrganizationCmd = {};
 	cmc.createOrganization = function() {
-		membershipSrv.createOrganizationPromise(accountService.getCurrentAccount(), cmc.createOrganizationCmd).then(
+		membershipSrv.createOrganizationPromise(accountSrv.getCurrentAccount(), cmc.createOrganizationCmd).then(
 			function(response) {
 				cmc.hideOrganizationCreationForm();
 				cmc.currentOrganization = response.organization;

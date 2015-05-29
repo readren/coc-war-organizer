@@ -28,11 +28,7 @@
   <body ng-app="uiApp">
     <!-- Add your site or application content here -->
     <div ng-include="'views/navigation.html'"></div>
-    <main class="container-fluid">
-        <div class="starter-template row">
-            <div ui-view></div>
-        </div>
-    </main>
+    <main ui-view></main>
 
     <!--[if lt IE 9]>
     <script src="bower_components/es5-shim/es5-shim.js"></script>
@@ -74,14 +70,19 @@
     <script src="auth/scripts/SignUpCtrl.js"></script>
     <script src="auth/scripts/UserService.js"></script>
     <script src="home/HomeCtrl.js"></script>
+    <script src="log/events/joinRequest/joinRequestCtrl.js"></script>
+    <script src="log/events/joinResponse/joinResponseCtrl.js"></script>
+    <script src="log/logCtrl.js"></script>
+    <script src="log/logSrv.js"></script>
     <script src="navigation/NavigationCtrl.js"></script>
     <script src="ngDirectives/anim.js"></script>
     <script src="ngDirectives/dropDown.js"></script>
-    <script src="settings/account/AccountChooserCtrl.js"></script>
-    <script src="settings/account/accountService.js"></script>
+    <script src="settings/account/accountChooserCtrl.js"></script>
+    <script src="settings/account/accountSrv.js"></script>
     <script src="settings/membership/membershipCtrl.js"></script>
     <script src="settings/membership/membershipSrv.js"></script>
-    <script src="utils/alertService.js"></script>
+    <script src="utils/alertSrv.js"></script>
+    <script src="utils/utilsSrv.js"></script>
     
  
     <!-- endbuild -->

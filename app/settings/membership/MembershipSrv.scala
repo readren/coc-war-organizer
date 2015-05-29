@@ -1,70 +1,92 @@
-/**
- *
- */
 package settings.membership
 
-/**
- * @author Gustavo
- *
- */
-import play.api.libs.json.Json
 import java.util.UUID
-import utils.Transition
-import utils.TransacMode
+import scala.annotation.implicitNotFound
 import auth.models.User
+import log.Event
+import log.EventsSource
+import log.events.joinRequest.JoinResponseEventDto
+import play.api.libs.json.JsString
+import play.api.libs.json.Json
+import play.api.libs.json.Writes
+import settings.account.AccountId
+import utils.TransacMode
+import utils.Transition
 import settings.account.Account
+import play.api.libs.json.JsValue
+import play.api.libs.json.JsObject
 
+trait Role {
+	val canAcceptJoinRequests: Boolean
+	val canRejectJoinRequests: Boolean
+	val canJoinDirectly: Boolean
+	val code: Char
+	def toJson = JsString(code.toString())
+}
+object Role {
+	private[this] val codeMap = Map(Leader.code -> Leader, Coleader.code -> Coleader, Veteran.code -> Veteran, Novice.code -> Novice)
+	def decode(code: Char) = codeMap(code)
+	implicit val jsonWrites: Writes[Role] = Writes[Role](_.toJson)
+}
+case object Leader extends Role {
+	override val canAcceptJoinRequests = true
+	override val canRejectJoinRequests = true
+	override val canJoinDirectly = true
+	override val code = 'L'
+}
+case object Coleader extends Role {
+	override val canAcceptJoinRequests = true
+	override val canRejectJoinRequests = true
+	override val canJoinDirectly = true
+	override val code = 'C'
+}
+case object Veteran extends Role {
+	override val canAcceptJoinRequests = true
+	override val canRejectJoinRequests = true
+	override val canJoinDirectly = false
+	override val code = 'V'
+}
+case object Novice extends Role {
+	override val canAcceptJoinRequests = false
+	override val canRejectJoinRequests = false
+	override val canJoinDirectly = false
+	override val code = 'N'
+}
 
 case class Organization(id: Organization.Id, clanName: String, clanTag: String, description: Option[String])
 object Organization {
 	type Id = UUID
-	implicit val jsonFormat = Json.format[Organization]
+	implicit val jsonFormat = Json.writes[Organization]
 }
 
-case class Member(organizationId: Organization.Id, tag: Member.Tag, name: String)
+case class Member(organizationId: Organization.Id, tag: Member.Tag, name: String, role: Role, holder: Option[AccountId])
 object Member {
 	type Tag = Int
 }
 
-case class MemberDto(tag: Member.Tag, name: String)
-object MemberDto {
-	implicit val jsonFormat = Json.format[MemberDto]
+case class Membership(organizationId: Organization.Id, memberTag: Member.Tag, accountId: AccountId, requestEventId: Event.Id, responseEventId: Event.Id, accepterMemberTag:Member.Tag)
+
+case class AbandonEvent(abandonEventId: Event.Id, accountId: AccountId)
+
+case class AbandonEventDto(id: Event.Id, instant: Event.Instant, memberName: String) extends Event {
+	def toJson: JsValue = AbandonEventDto.jsonFormat.writes(this)
+}
+object AbandonEventDto {
+	implicit val jsonFormat = Json.writes[AbandonEventDto].transform { x => x.as[JsObject] + ("type" -> JsString("abandon")) }
 }
 
-case class CreateOrganizationCmd(accountTag: Account.Tag, accountName:String, clanName: String, clanTag: String, description: Option[String], memberName:Option[String])
-object CreateOrganizationCmd {
-	implicit val jsonFormat = Json.format[CreateOrganizationCmd]
-}
-
-case class SearchOrganizationsCmd(clanName: Option[String], clanTag: Option[String], description: Option[String])
-object SearchOrganizationsCmd {
-	implicit val jsonFormat = Json.format[SearchOrganizationsCmd]
-}
-
-case class JoinRequest(userId: User.Id, accountTag: Account.Tag, organizationId: Organization.Id, rejectionMsg:Option[String])
-//object JoinRequest {
-//	implicit val jsonFormat = Json.format[JoinRequest]
-//}
-
-case class SendJoinRequestCmd(accountTag: Account.Tag, organizationId: Organization.Id)
-object SendJoinRequestCmd {
-	implicit val jsonFormat = Json.format[SendJoinRequestCmd]
-}
-
-case class Membership(organizationId: Organization.Id, memberTag: Member.Tag, userId: User.Id, accountTag: Account.Tag)
-
-case class MembershipStatusDto(organization: Option[Organization], memberDto: Option[MemberDto], rejectionMsg: Option[String])
-object MembershipStatusDto {
-	implicit val jsonFormat = Json.format[MembershipStatusDto]
-}
-
-
-trait MembershipSrv {
-	def getMembershipStatusOf(userId: User.Id, accountTag: Account.Tag): Transition[TransacMode, MembershipStatusDto]
+trait MembershipSrv extends EventsSource[Event] {
+	def getMembershipStatusOf(accountId: AccountId): Transition[TransacMode, MembershipStatusDto]
+	/**Gives all the [[Organization]]s that fulfill the received criteria.*/
 	def searchOrganizations(criteria: SearchOrganizationsCmd): Transition[TransacMode, Seq[Organization]]
 	def sendJoinRequest(userId: User.Id, sendJoinRequestCmd: SendJoinRequestCmd): Transition[TransacMode, MembershipStatusDto]
-	def cancelJoinRequest(userId: User.Id, accountTag: Account.Tag): Transition[TransacMode, MembershipStatusDto]
-	def leaveOrganization(userId: User.Id, accountTag: Account.Tag): Transition[TransacMode, MembershipStatusDto]
-	def createOrganization(userId: User.Id, project: CreateOrganizationCmd): Transition[TransacMode, Organization]
+	def cancelJoinRequest(accountId: AccountId): Transition[TransacMode, MembershipStatusDto]
+	def leaveOrganization(accountId: AccountId): Transition[TransacMode, MembershipStatusDto]
+	/**
+	 * Creates a new [[Organization]] and stores it into the underlying DB.
+	 * @return the created [[Organization]]
+	 */
+	def createOrganization(userId: User.Id, project: CreateOrganizationCmd): Transition[TransacMode, (Organization, Member, Membership)]
+	def getOrganizationOf(accountId: AccountId): Transition[TransacMode, Option[Organization.Id]]
 }
 

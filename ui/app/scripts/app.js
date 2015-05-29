@@ -43,7 +43,8 @@ app.config(function ($urlRouterProvider, $stateProvider, $httpProvider, $authPro
     .state('signUp', { url: '/signUp', templateUrl: '/views/signUp.html' })
     .state('signIn', { url: '/signIn', templateUrl: '/views/signIn.html' })
     .state('signOut', { url: '/signOut', template: null,  controller: 'SignOutCtrl' })
-	.state('accountSettings',{url: '/accountSettings', templateUrl:'/views/accountSettings.html'})
+	.state('settings',{url: '/settings', templateUrl:'/views/settings.html'})
+	.state('log',{url: '/log', templateUrl:'/views/log.html'})
 	;
 
   $httpProvider.interceptors.push(function($q, $injector) {
@@ -69,7 +70,7 @@ app.config(function ($urlRouterProvider, $stateProvider, $httpProvider, $authPro
   // Auth config
   $authProvider.httpInterceptor = true; // Add Authorization header to HTTP request
   $authProvider.loginOnSignup = true;
-  $authProvider.loginRedirect = 'accountSettings';
+  $authProvider.loginRedirect = 'settings';
   $authProvider.logoutRedirect = '/';
   $authProvider.signupRedirect = 'home';
   $authProvider.loginUrl = '/signIn';

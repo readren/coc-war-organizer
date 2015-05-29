@@ -1,7 +1,7 @@
 'use strict';
-
 /*global app: false */
-app.factory('membershipSrv', ['$http', '$q', '$auth',function($http, $q, $auth){
+
+app.factory('membershipSrv', ['utilsSrv', '$http', '$q', '$auth',function(utilsSrv, $http, $q, $auth){
 	var currentOrganizationCache = {};
 	var lastQueryToken = 0;
 	
@@ -42,15 +42,7 @@ app.factory('membershipSrv', ['$http', '$q', '$auth',function($http, $q, $auth){
 		
 		/**Search for all the organizations that satisfy the received criteria */
 		searchOrganizationsPromise: function(searchOrganizationsCmd) {
-			var deferred = $q.defer();
-			$http.post('/membership/searchOrganizations', searchOrganizationsCmd).then(
-				function(value) {
-					deferred.resolve(value.data);
-				},
-				function(reason) {
-					deferred.reject(reason.data);
-				});
-			return deferred.promise;
+			return utilsSrv.mapHttpData($http.post('/membership/searchOrganizations', searchOrganizationsCmd));
 		},
 		
 		getCurrentOrganizationPromise: function(account) {
@@ -68,30 +60,23 @@ app.factory('membershipSrv', ['$http', '$q', '$auth',function($http, $q, $auth){
 			updateCache();
 			return treatMembershipStatus(account.tag, deferred, $http.post('/membership/sendJoinRequest', {accountTag: account.tag, organizationId: organization.id}));
 		},
-		
+
 		cancelJoinRequestPromise: function(account) {
 			var deferred = $q.defer();
 			updateCache();
 			return treatMembershipStatus(account.tag, deferred, $http.post('/membership/cancelJoinRequest', account.tag));
 		},
-		
-		leaveOrganizationPromise: function(account, organization) {
+
+		leaveOrganizationPromise: function(account) {
 			var deferred = $q.defer();
 			updateCache();
 			return treatMembershipStatus(account.tag, deferred, $http.post('/membership/leaveOrganization', account.tag));
 		},
 		
 		createOrganizationPromise: function(account, createOrganizationCmd) {
-			var deferred = $q.defer();
 			createOrganizationCmd.accountTag = account.tag;
 			createOrganizationCmd.accountName = account.name;
-			$http.post('/membership/createOrganization', createOrganizationCmd)
-			.then(function(value) {
-				deferred.resolve(value.data);
-			}, function(reason){
-				deferred.reject(reason.data);
-			});
-			return deferred.promise;
+			return utilsSrv.mapHttpData($http.post('/membership/createOrganization', createOrganizationCmd));
 		}
 	};
 }]);

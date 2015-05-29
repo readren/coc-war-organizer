@@ -12,12 +12,17 @@ import play.api.libs.json.JsSuccess
 import play.api.libs.json.JsError
 import java.util.UUID
 import common.AlreadyExistException
+import utils.Transition
+import utils.TransacMode
+import utils.JdbcTransacMode
 
 /**
  * @author Gustavo
  */
 
-case class Account(userId: UUID, tag:Account.Tag, name: String, description: Option[String])
+case class AccountId(userId: User.Id, tag: Account.Tag)
+
+case class Account(userId: UUID, tag: Account.Tag, name: String, description: Option[String])
 object Account {
 	type Tag = Int
 	implicit val jsonFormat = Json.format[Account]
@@ -28,13 +33,13 @@ object AccountPrj {
 	implicit val jsonFormat = Json.format[AccountPrj]
 }
 
-trait AccountService {
+trait AccountSrv {
 	def getAll(userId: User.Id): Future[Seq[Account]]
 	def create(userId: User.Id, project: AccountPrj): Future[Account]
 }
 
-class AccountServiceImpl @Inject() (val accountDao: AccountDao)
-	extends AccountService {
+class AccountSrvImpl @Inject() (val accountDao: AccountDao)
+	extends AccountSrv {
 
 	override def getAll(userId: User.Id) = accountDao.getAll(userId);
 	override def create(userId: User.Id, account: AccountPrj) = accountDao.insert(userId, account);
@@ -43,6 +48,7 @@ class AccountServiceImpl @Inject() (val accountDao: AccountDao)
 trait AccountDao {
 	def getAll(userId: User.Id): Future[Seq[Account]]
 	def insert(userId: User.Id, account: AccountPrj): Future[Account]
+	def findById(accountId: AccountId): Transition[TransacMode, Option[Account]]
 }
 
 class AccountDaoImpl extends AccountDao {
@@ -72,20 +78,30 @@ class AccountDaoImpl extends AccountDao {
 		case are: PSQLException if are.getSQLState() == "23505" // unique_violation - duplicate key value violates unique constraint. See "http://www.postgresql.org/docs/9.3/static/errcodes-appendix.html"
 		=> Future.failed(new AlreadyExistException("An account with that name already exists", are))
 	}
+	
+	override def findById(accountId:AccountId): Transition[TransacMode, Option[Account]] = JdbcTransacMode.inConnection { 
+		SQL"select * from orga_account where user_id = ${accountId.userId} and tag = ${accountId.tag}".as(AccountDaoImpl.accountParser.singleOpt)(_)
+	}
 }
 
 object AccountDaoImpl {
 	import anorm.SqlParser._
 	import anorm._
 
-	lazy val accountParser: RowParser[Account] = {
-		get[UUID]("user_id") ~ get[Account.Tag]("tag") ~ str("name") ~ str("description").? map {
-			case userId ~ tag ~ name ~ description => Account(userId, tag, name, description)
+	def pkParser(userIdFieldName: String, accountTagFieldName: String): RowParser[AccountId] = {
+		get[UUID](userIdFieldName) ~ get[Account.Tag](accountTagFieldName) map {
+			case userId ~ accountTag => AccountId(userId, accountTag)
+		}
+	}
+
+	val accountParser: RowParser[Account] = {
+		pkParser("user_id", "tag") ~ str("name") ~ str("description").? map {
+			case accountId ~ name ~ description => Account(accountId.userId, accountId.tag, name, description)
 		}
 	}
 }
 
-class AccountCtrl @Inject() (implicit val env: Environment[User, JWTAuthenticator], accountService: AccountService)
+class AccountCtrl @Inject() (implicit val env: Environment[User, JWTAuthenticator], accountSrv: AccountSrv)
 	extends Silhouette[User, JWTAuthenticator] {
 
 	import scala.concurrent.ExecutionContext.Implicits.global
@@ -95,18 +111,15 @@ class AccountCtrl @Inject() (implicit val env: Environment[User, JWTAuthenticato
 	 * gives all the accounts of the current user.
 	 */
 	def getAll = SecuredAction.async { implicit request =>
-		accountService.getAll(request.identity.id).map(x => Ok(Json.toJson(x)))
+		accountSrv.getAll(request.identity.id).map(x => Ok(Json.toJson(x)))
 	}
 
 	def create = SecuredAction.async(parse.json) { implicit request =>
-		request.body.validate[AccountPrj] match {
-			case JsSuccess(accountPrj, _) =>
-				accountService.create(request.identity.id, accountPrj).map(x => Ok(Json.toJson(x)))
-					.recover {
-						case are: AlreadyExistException => Conflict(are.getMessage())
-					}
-			case e: JsError => Future.successful(BadRequest(JsError.toFlatJson(e)))
-		}
+		val accountPrj = request.body.as[AccountPrj]
+		accountSrv.create(request.identity.id, accountPrj).map(x => Ok(Json.toJson(x)))
+			.recover {
+				case are: AlreadyExistException => Conflict(are.getMessage())
+			}
 
 	}
 

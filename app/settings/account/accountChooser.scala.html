@@ -6,13 +6,12 @@
 	</header>
 	<h4 style="display:flex">
 		<label style="padding-right: .5em;">Current</label>
-		<span style="min-width:14em; border:groove 3px; color:white; background-image:url('/assets/images/wild_oliva.png');" 
-			 class="rea-flip pale-text-shadow" rea-vc-anim rea-vc-anim-set-inter="acc.currentAccountSetterInterceptor" rea-vc-anim-get-inter="acc.currentAccountGetterInterceptor" >
+		<span class="chosen-item rea-flip pale-text-shadow" rea-vc-anim rea-vc-anim-set-inter="acc.currentAccountSetterInterceptor" rea-vc-anim-get-inter="acc.currentAccountGetterInterceptor" >
 				{{acc.currentAccountGetterInterceptor(acc.getCurrentAccount).name}}
 			
 		</span>
 	</h4>
-	<div style="display:flex; justify-content:space-around">
+	<div style="display: flex; justify-content:space-around">
 		<div rea-drop-down rea-toggle="acc.toggleAccountSelector" >
 			<button class="btn btn-default"	ng-click="acc.toggleAccountSelector()" ng-disabled="acc.accounts.length == 0">switch</button>
 			<aside rea-drop-down-content class="am-fade" >
@@ -30,7 +29,7 @@
 			</aside>
 		</div>
 
-		<div style="display:flex; align-content:space-around;" rea-drop-down rea-toggle="acc.toggleAccountAdder">
+		<div style="align-content:space-around;" rea-drop-down rea-toggle="acc.toggleAccountAdder">
 			<button class="btn btn-default" ng-click="acc.toggleAccountAdder()"	ng-disabled="acc.accounts.length >= 20">Add</button>
 			<aside rea-drop-down-content class="am-fade" style="right:0; left:inherit;">
 				<form class="form" name="form" style="display:flex; flex-direction: column; align-items: center;">
