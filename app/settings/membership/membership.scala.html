@@ -15,18 +15,18 @@
 	<div ng-show="cmc.state=='alone'" class="flexCenteredColumn am-fade-and-scale">
 		<p style="word-wrap:normal">This CoC account has no organization. You can create a new organization or join to an existing one.</p>
 		<nav class="actions buttons-bar">	
-			<div rea-drop-down rea-show="cmc.showOrganizationJoiningForm" rea-hide="cmc.hideOrganizationJoiningForm">
+			<div rea-drop-anchor rea-show="cmc.showOrganizationJoiningForm" rea-hide="cmc.hideOrganizationJoiningForm">
 				<button class="btn btn-default"	ng-click="cmc.showOrganizationJoiningForm()">join to an existing organization</button>
-					<form rea-drop-down-content class="am-fade flexCenteredColumn" >
+					<form rea-drop-popup class="am-fade flexCenteredColumn" >
 						<input ng-model="cmc.searchOrganizationsCmd.clanName" placeholder='@Messages("settings.clanMembership.clanName.placeholder")'
 							bs-tooltip data-title='@Messages("settings.clanMembership.clanName.tooltip")'/>
 						<input ng-model="cmc.searchOrganizationsCmd.clanTag" placeholder='@Messages("settings.clanMembership.clanTag.placeholder")'
 							bs-tooltip data-title='@Messages("settings.clanMembership.clanTag.tootip")' />
 						<input ng-model="cmc.searchOrganizationsCmd.description" placeholder='@Messages("settings.clanMembership.organizationDescription.placeholder")'
 							bs-tooltip data-title='@Messages("settings.clanMembership.organizationDescription.tooltip")'/>
-						<div rea-drop-down rea-show="cmc.showSearchResult" rea-hide="cmc.hideSearchResult">
+						<div rea-drop-anchor rea-show="cmc.showSearchResult" rea-hide="cmc.hideSearchResult">
 							<button ng-click='cmc.searchOrganizations($event)' class="btn btn-default">search</button>
-							<aside rea-drop-down-content class="am-fade">
+							<aside rea-drop-popup class="am-fade">
 								<p ng-show="cmc.aSearchIsInProgress">Searching...</p>
 								<table ng-show="!cmc.aSearchIsInProgress" class="table">
 									<thead style="font-style: italic;"><tr><th>clan name</th><th>clan tag</th><th>description</th></tr></thead>
@@ -45,9 +45,9 @@
 			</div>		
 		
 		
-			<div rea-drop-down rea-toggle="cmc.toggleOrganizationCreationForm" rea-hide="cmc.hideOrganizationCreationForm">
+			<div rea-drop-anchor rea-toggle="cmc.toggleOrganizationCreationForm" rea-hide="cmc.hideOrganizationCreationForm">
 				<button class="btn btn-default"	ng-click="cmc.toggleOrganizationCreationForm()">create a new organization</button>
-					<form name="form" rea-drop-down-content class="am-fade flexCenteredColumn">
+					<form name="form" rea-drop-popup class="am-fade flexCenteredColumn">
 						<input ng-model="cmc.createOrganizationCmd.clanName" placeholder='@Messages("settings.clanMembership.clanName.placeholder")' required
 							bs-tooltip data-title='@Messages("settings.clanMembership.clanName.tooltip")'/>
 						<input ng-model="cmc.createOrganizationCmd.clanTag" placeholder='@Messages("settings.clanMembership.clanTag.placeholder")' required

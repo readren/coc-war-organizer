@@ -192,9 +192,33 @@ a {
 
 /****************My classes ********************/
 
+/* ---- para reaDropDown directive ---- */
+
+.reaDropAnchor {
+	position: relative;
+}
+
+.reaDropPopup {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1000;
+  float: left;
+  background-image:url('/assets/images/seamless_paper_texture.png');
+  background-color: #AAA;
+  -webkit-background-clip: padding-box;
+  background-clip: padding-box;
+  border: 2px solid #ddd;
+  border-radius: 4px;
+  -webkit-box-shadow: 4px 4px 12px black;
+  box-shadow: 4px 4px 12px black;
+}
+
 .dropdown-menu {
 	display:block;
 }
+
+/* ---- */
 
 .dark-text-shadow {
 	text-shadow: rgb(99,99,99) 1px 1px 3px;
