@@ -50,19 +50,19 @@ class CentralCtrl extends Controller {
 	}
 
 	def startBattle = Action.async(parse.json) { request =>
-		Future.successful(Ok(""))
+		Future.successful(Ok(Json.toJson("")))
 	}
 
 	def endWar = Action.async(parse.json) { request =>
-		Future.successful(Ok(""))
+		Future.successful(Ok(Json.toJson("")))
 	}
 
 	def addParticipant = Action.async(parse.json) { request =>
-		Future.successful(Ok(""))
+		Future.successful(Ok(Json.toJson("")))
 	}
 
 	def removeParticipant = Action.async(parse.json) { request =>
-		Future.successful(Ok("")))
+		Future.successful(Ok(Json.toJson("")))
 	}
 
 }

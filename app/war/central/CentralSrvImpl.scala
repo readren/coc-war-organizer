@@ -20,4 +20,8 @@ class CentralSrvImpl @Inject() (tte: TransacTransitionExec) extends CentralSrv {
 			???
 		}
 
+  def getWarState(): Unit = {
+	  ???
+	}
+
 }
