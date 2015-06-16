@@ -43,7 +43,9 @@ app.config(function ($urlRouterProvider, $stateProvider, $httpProvider, $authPro
     .state('signUp', { url: '/signUp', templateUrl: '/views/signUp.html' })
     .state('signIn', { url: '/signIn', templateUrl: '/views/signIn.html' })
     .state('signOut', { url: '/signOut', template: null,  controller: 'SignOutCtrl' })
-	.state('settings',{url: '/settings', templateUrl:'/views/settings.html'})
+	.state('settings', {url: '/settings', templateUrl:'/views/settings.html'})
+	.state('centralCommand', {url: '/centralCommand', templateUrl: '/views/centralCommand.html'})
+	.state('warAttacksDistrib', {url: '/warAttacksDistrib', templateUrl: '/views/warAttacksDistrib.html'})
 	.state('log',{url: '/log', templateUrl:'/views/log.html'})
 	;
 

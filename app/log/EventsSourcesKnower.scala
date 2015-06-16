@@ -9,7 +9,7 @@ import utils.TransacMode
 import javax.inject.Inject
 import log.events.joinRequest.JoinRequestSrv
 import settings.account.Account
-import settings.account.AccountId
+import settings.account.Account
 import settings.membership.MembershipSrv
 import settings.membership.Organization
 

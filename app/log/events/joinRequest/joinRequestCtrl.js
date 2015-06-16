@@ -28,10 +28,10 @@ app.controller('joinRequestCtrl', [ 'joinRequestSrv', '$scope', 'alertSrv', 'log
 		} else {
 			jrc.responderMemberName = incitingEvent.responderMemberName;
 			jrc.rejectionMsg = incitingEvent.rejectionMsg;
-			jrc.isWaiting = false;
 			jrc.hasBeenAccepted = jrc.requesterMemberName !== undefined;
 			jrc.hasBeenRejected = jrc.requesterMemberName === undefined;
 		}
+		jrc.isWaiting = false;
 	};
 	
 	logSrv.updateMe($scope.event.id, $scope.event.updateHandler);

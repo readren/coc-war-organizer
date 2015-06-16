@@ -18,16 +18,16 @@ import play.api.libs.json.JsError
 import settings.account.AccountSrv
 import settings.account.Account
 import common.AlreadyExistException
-import settings.account.AccountId
+import settings.account.Account
 import log.Event
 
 
-case class MemberDto(tag: Member.Tag, name: String, organizationId: Organization.Id, role: Role)
-object MemberDto {
-	implicit val jsonFormat = Json.writes[MemberDto]
+case class IconDto(tag: Icon.Tag, name: String, organizationId: Organization.Id, role: Role)
+object IconDto {
+	implicit val jsonFormat = Json.writes[IconDto]
 }
 
-case class CreateOrganizationCmd(accountTag: Account.Tag, accountName: String, clanName: String, clanTag: String, description: Option[String], memberName: Option[String])
+case class CreateOrganizationCmd(accountTag: Account.Tag, accountName: String, clanName: String, clanTag: String, description: Option[String], iconName: Option[String])
 object CreateOrganizationCmd {
 	implicit val jsonFormat = Json.reads[CreateOrganizationCmd]
 }
@@ -47,7 +47,7 @@ object SendJoinRequestCmd {
  * "waiting join request response" when only organization is defined,
  * "rejected" when only memberDto is empty,
  * "already joined" when only rejectionMsg is empty.*/
-case class MembershipStatusDto(organization: Option[Organization], memberDto: Option[MemberDto], rejectionMsg: Option[String])
+case class MembershipStatusDto(organization: Option[Organization], iconDto: Option[IconDto], rejectionMsg: Option[String])
 object MembershipStatusDto {
 	implicit val jsonFormat = Json.writes[MembershipStatusDto]
 }
@@ -59,7 +59,7 @@ class MembershipCtrl @Inject() (implicit val env: Environment[User, JWTAuthentic
 
 	def getMembershipStatusOf(accountTag: Int) = SecuredAction.async { implicit request =>
 		transacTransitionExec.autoFuture(simpleDbLookups) {
-			membershipSrv.getMembershipStatusOf(AccountId(request.identity.id, accountTag)).map { response =>
+			membershipSrv.getMembershipStatusOf(Account.Id(request.identity.id, accountTag)).map { response =>
 				Ok(Json.toJson(response))
 			}
 		}
@@ -89,7 +89,7 @@ class MembershipCtrl @Inject() (implicit val env: Environment[User, JWTAuthentic
 	def cancelJoinRequest = SecuredAction.async(parse.json) { implicit request =>
 		val accountTag = request.body.as[Account.Tag]
 		transacTransitionExec.autoFuture(dbWriteOperations) {
-			membershipSrv.cancelJoinRequest(AccountId(request.identity.id, accountTag)).map { response =>
+			membershipSrv.cancelJoinRequest(Account.Id(request.identity.id, accountTag), false).map { response =>
 				Ok(Json.toJson(response))
 			}
 		}
@@ -98,7 +98,7 @@ class MembershipCtrl @Inject() (implicit val env: Environment[User, JWTAuthentic
 	def leaveOrganization = SecuredAction.async(parse.json) { implicit request =>
 		val accountTag = request.body.as[Account.Tag]
 		transacTransitionExec.autoFuture(dbWriteOperations) {
-			membershipSrv.leaveOrganization(AccountId(request.identity.id, accountTag)).map { response =>
+			membershipSrv.leaveOrganization(Account.Id(request.identity.id, accountTag)).map { response =>
 				Ok(Json.toJson(response))
 			}
 		}
@@ -108,7 +108,7 @@ class MembershipCtrl @Inject() (implicit val env: Environment[User, JWTAuthentic
 		val createOrganizationCmd = request.body.as[CreateOrganizationCmd]
 		transacTransitionExec.autoFuture(dbWriteOperations) {
 			membershipSrv.createOrganization(request.identity.id, createOrganizationCmd).map { omm =>
-				Ok(Json.toJson(MembershipStatusDto(Some(omm._1), Some(MemberDto(omm._2.tag, omm._2.name, omm._1.id, Leader)), None)))
+				Ok(Json.toJson(MembershipStatusDto(Some(omm._1), Some(omm._2), None)))
 			}
 		}.recover {
 			case are: AlreadyExistException => Conflict(are.getMessage())

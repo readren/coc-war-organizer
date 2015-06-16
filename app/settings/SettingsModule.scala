@@ -16,9 +16,9 @@ import settings.membership.MembershipSrv
 import settings.membership.OrganizationDao
 import settings.membership.MembershipSrvImpl
 import settings.membership.MembershipDao
-import settings.membership.MemberDao
+import settings.membership.IconDao
 import settings.membership.JoinRequestDao
-import settings.membership.jdbcDaos.MemberDaoImpl
+import settings.membership.jdbcDaos.IconDaoImpl
 import settings.membership.jdbcDaos.JoinRequestDaoImpl
 import settings.membership.jdbcDaos.MembershipDaoImpl
 import settings.membership.jdbcDaos.OrganizationDaoImpl
@@ -38,7 +38,7 @@ class SettingsModule extends AbstractModule with ScalaModule {
 		bind[MembershipSrv].to[MembershipSrvImpl]
 
 		bind[JoinRequestDao].to[JoinRequestDaoImpl]
-		bind[MemberDao].to[MemberDaoImpl]
+		bind[IconDao].to[IconDaoImpl]
 		bind[MembershipDao].to[MembershipDaoImpl]
 		bind[OrganizationDao].to[OrganizationDaoImpl]
 		

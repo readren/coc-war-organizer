@@ -20,11 +20,13 @@ import utils.JdbcTransacMode
  * @author Gustavo
  */
 
-case class AccountId(userId: User.Id, tag: Account.Tag)
 
-case class Account(userId: UUID, tag: Account.Tag, name: String, description: Option[String])
+case class Account(userId: UUID, tag: Account.Tag, name: String, description: Option[String]) {
+  def id = Account.Id(userId, tag)
+}
 object Account {
 	type Tag = Int
+	case class Id(userId: User.Id, tag: Account.Tag)
 	implicit val jsonFormat = Json.format[Account]
 }
 
@@ -48,7 +50,7 @@ class AccountSrvImpl @Inject() (val accountDao: AccountDao)
 trait AccountDao {
 	def getAll(userId: User.Id): Future[Seq[Account]]
 	def insert(userId: User.Id, account: AccountPrj): Future[Account]
-	def findById(accountId: AccountId): Transition[TransacMode, Option[Account]]
+	def findById(accountId: Account.Id): Transition[TransacMode, Option[Account]]
 }
 
 class AccountDaoImpl extends AccountDao {
@@ -79,7 +81,7 @@ class AccountDaoImpl extends AccountDao {
 		=> Future.failed(new AlreadyExistException("An account with that name already exists", are))
 	}
 	
-	override def findById(accountId:AccountId): Transition[TransacMode, Option[Account]] = JdbcTransacMode.inConnection { 
+	override def findById(accountId:Account.Id): Transition[TransacMode, Option[Account]] = JdbcTransacMode.inConnection { 
 		SQL"select * from orga_account where user_id = ${accountId.userId} and tag = ${accountId.tag}".as(AccountDaoImpl.accountParser.singleOpt)(_)
 	}
 }
@@ -88,9 +90,9 @@ object AccountDaoImpl {
 	import anorm.SqlParser._
 	import anorm._
 
-	def pkParser(userIdFieldName: String, accountTagFieldName: String): RowParser[AccountId] = {
+	def pkParser(userIdFieldName: String, accountTagFieldName: String): RowParser[Account.Id] = {
 		get[UUID](userIdFieldName) ~ get[Account.Tag](accountTagFieldName) map {
-			case userId ~ accountTag => AccountId(userId, accountTag)
+			case userId ~ accountTag => Account.Id(userId, accountTag)
 		}
 	}
 

@@ -38,10 +38,10 @@ object Event {
 	implicit def jsonWrites: Writes[Event] = Writes[Event] ( _.toJson )
 }
 
-/**An event that affects the state of some previous events.
- * The way in which a previous events is affected is determined by the affected event itself, and the effect depends on the [[RetroEvent]]  */
+/**An event that affects the state of something initiated by a previous events.
+ * Design decision: The way in which the state, of the thing that was initiated by previous event, is affected by a subsequent [[RetroEvent]] is determined by the affected event handler, and the effect depends on the [[RetroEvent]]  */
 trait RetroEvent extends Event {
-	/**Ids of the affected events */
+	/**Ids of the events that initiated the things whose states are affected by this event */
 	val affectedEvents: Seq[Event.Id]
 }
 

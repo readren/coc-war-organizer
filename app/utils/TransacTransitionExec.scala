@@ -33,10 +33,19 @@ trait TransacTransitionExec {
 		}
 	}
 
-	def inTransaction[X](block: Transition[TransacMode, X]) = Transition[TransacMode, X] {
+	/**Wraps the received block in a transaction if */
+	def inTransaction[X](block: Transition[TransacMode, X]): Transition[TransacMode, X] = Transition[TransacMode, X] {
 		case in: InTransacMode => block.run(in)
 		case out: OutTransacMode =>
-			val TransitionResult(ts3, x) = block.run(out.begin)
-			TransitionResult(ts3.asInstanceOf[InTransacMode].commit, x)
+			val itm = out.begin
+			try {
+				val TransitionResult(ts3, x) = block.run(itm)
+				TransitionResult(ts3.asInstanceOf[InTransacMode].commit, x)
+			} catch {
+				case NonFatal(e) => {
+					itm.rollback
+					throw e
+				}
+			}
 	}
 }

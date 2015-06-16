@@ -17,9 +17,9 @@ app.controller('clanMembershipCtrl', ['accountSrv', 'membershipSrv', 'alertSrv',
 		if (response.rejectionMsg) {
 			cmc.rejectionMsg = response.rejectionMsg;
 			cmc.state = 'rejected';
-		} else if( response.memberDto) {
+		} else if( response.iconDto) {
 			cmc.currentOrganization = response.organization;
-			cmc.memberDto = response.memberDto;
+			cmc.iconDto = response.iconDto;
 			cmc.state = 'joined';
 		} else if( response.organization ) {
 			cmc.pretendedOrganization = response.organization;
@@ -104,7 +104,7 @@ app.controller('clanMembershipCtrl', ['accountSrv', 'membershipSrv', 'alertSrv',
 			function(response) {
 				cmc.hideOrganizationCreationForm();
 				cmc.currentOrganization = response.organization;
-				cmc.memberDto = response.memberDto;
+				cmc.iconDto = response.iconDto;
 				alertSrv.success('The new organization has been created successfully');
 				cmc.state = 'joined';
 			},

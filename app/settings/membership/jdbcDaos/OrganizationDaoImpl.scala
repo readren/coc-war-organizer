@@ -16,7 +16,7 @@ import utils.JdbcTransacMode
 import utils.TransacMode
 import utils.Transition
 import utils.UuidToStatement._
-import settings.account.AccountId
+import settings.account.Account
 
 /**
  * @author Gustavo
@@ -39,11 +39,10 @@ where (${cmd.clanName.isEmpty} or org.clan_name = ${cmd.clanName})
 		sql.as(OrganizationDaoImpl.organizationParser.singleOpt)
 	})
 
-	override def insert(cmd: CreateOrganizationCmd) = JdbcTransacMode.inConnection(implicit connection => {
-		val id = UUID.randomUUID()
-		val sql = SQL"insert into orga_organization (id, clan_name, clan_tag, description) values ($id, ${cmd.clanName}, ${cmd.clanTag}, ${cmd.description})"
+	override def insert(cmd: CreateOrganizationCmd): Transition[TransacMode, Organization] = JdbcTransacMode.inConnection(implicit connection => {
+		val sql = SQL"insert into orga_organization (id, clan_name, clan_tag, description) values (default, ${cmd.clanName}, ${cmd.clanTag}, ${cmd.description})"
 		try {
-			sql.executeUpdate()
+			val id = sql.executeInsert(get[Organization.Id](1).single)
 			new Organization(id, cmd.clanName, cmd.clanTag, cmd.description)
 		} catch {
 			case are: PSQLException if are.getSQLState() == "23505" => // unique_violation - duplicate key value violates unique constraint. See "http://www.postgresql.org/docs/9.3/static/errcodes-appendix.html"
@@ -51,7 +50,7 @@ where (${cmd.clanName.isEmpty} or org.clan_name = ${cmd.clanName})
 		}
 	})
 
-  override def findOf(accountId:AccountId): Transition[TransacMode, Option[Organization.Id]] = JdbcTransacMode.inConnection(implicit connection => {
+  override def findOf(accountId:Account.Id): Transition[TransacMode, Option[Organization.Id]] = JdbcTransacMode.inConnection(implicit connection => {
 	  val sql = SQL"""
 select o.id
 from orga_organization o

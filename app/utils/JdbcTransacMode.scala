@@ -69,8 +69,10 @@ class InJdbcTransacMode(dataSource: DataSource) extends JdbcTransacMode with InT
 	}
 
 	override def rollback = {
-		logger.info("rollBack")
-		assert(stillTruly)
+		if( stillTruly)
+			logger.info("rollBack")
+		else
+			logger.error("uncertain rollback")
 		stillTruly = false
 		connection.rollback()
 		connection.setAutoCommit(true)

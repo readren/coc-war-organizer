@@ -50,6 +50,7 @@ class ApplicationController @Inject() (implicit val env: Environment[User, JWTAu
       case "joinResponse" => Ok(log.events.joinResponse.html.joinResponse())
       case "joinCancel" => Ok(log.events.joinCancel.html.joinCancel())
       case "abandon" => Ok(log.events.abandon.html.abandon())
+      case "centralCommand" => Ok(war.central.html.central())
       case "signUp" => Ok(auth.views.html.signUp())
       case "signIn" => Ok(auth.views.html.signIn())
       case "navigation" => Ok(navigation.html.navigation.render())

@@ -1,11 +1,11 @@
 package utils
 
 /**
- * Technology agnostic representation of the ways in which a chunk of stateful/effectful code that accesses a transactional information system affects the information maintained by said system. There are two ways: inside or outside a transaction. When changes are done inside a transaction, they can be undone.
+ * Technology agnostic representation of the ways in which a chunk of stateful/effectful code that accesses a transactional information system affects the information maintained by said system. There are two ways: inside or outside a transaction. When changes are done inside a transaction they should be all confirmed (committed) or all undone (rolled back).
  * The representation should be reliable at least until any of its effectful operations is called. After that this representation may be untruly (and in most implementations it will).
  **/
 trait TransacMode {
-	/**Tells  */
+	/**Tells the way in which the related chunk of code affects the information maintained by a transactional information system: inside or outside a transaction. When changes are done inside a transaction they should be all confirmed (committed) or all undone (rolled back).   */
 	def isInside: Boolean
 	/**Tells if this instance represents reliably the way in which the effects are treated.
 	 * Note this operation is referentially opaque*/

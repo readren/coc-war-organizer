@@ -18,11 +18,11 @@ app.factory('membershipSrv', ['utilsSrv', '$http', '$q', '$auth',function(utilsS
 		}
 	};
 	
-	/**gives the same response than received promise but, if the account is member of an organization, the membershipStatus is stored in the account->membershipStatus cache */
+	/**gives the same response than the received promise but, if the account is member of an organization, the membershipStatus is stored in the account->membershipStatus cache */
 	var treatMembershipStatus = function(accountTag, deferred, promise) {
 		promise.then(
 			function(response) {
-				if(response.data.organization && response.data.memberDto) {
+				if(response.data.organization && response.data.iconDto) {
 					currentOrganizationCache[accountTag] = response.data;
 				}
 				deferred.resolve(response.data);

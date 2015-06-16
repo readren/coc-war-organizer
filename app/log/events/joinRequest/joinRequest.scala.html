@@ -1,13 +1,13 @@
 <!-- @()(implicit request: RequestHeader)  -->
 
-<div rea-drop-down rea-toggle="toggleRejectDlg">
+<div rea-drop-anchor rea-toggle="toggleRejectDlg">
 <div ng-controller="joinRequestCtrl as jrc" class="flexBaselineRow" >
 	<h4 style="margin-right: 1em;">Join Request</h4>
 	<p ng-show="jrc.isWaiting" ><b>{{jrc.requesterAccountName}}</b> wants to join the organization.</p>
 	<div ng-show="jrc.isWaiting" >
 		<button style="margin-left: 1em;" ng-click="jrc.accept()">accept</button>
 		<button style="margin-left: 1em;" ng-click="toggleRejectDlg()">reject</button>
-		<aside rea-drop-down-content class="am-fade panel panel-default">
+		<aside rea-drop-popup class="am-fade panel panel-default">
 			<header class="panel-heading">
 				<h4>Rejection message</h4>
 			</header>
@@ -19,6 +19,6 @@
 	</div>
 	<p ng-show="jrc.hasBeenAccepted"><b>{{jrc.requesterAccountName}}</b> wanted to join and has been accepted by <b>{{jrc.responderMemberName}}</b></p>
 	<p ng-show="jrc.hasBeenRejected"><b>{{jrc.requesterAccountName}}</b> wanted to join but has been rejected by <b>{{jrc.responderMemberName}}</b> saying <i>{{jrc.rejectionMsg}}</i></p>
-	<p ng-show="jrc.hasBennCanceled"><b>{{jrc.requesterAccountName}}</b> wanted to join but has canceled his join request</p>
+	<p ng-show="jrc.hasBeenCanceled"><b>{{jrc.requesterAccountName}}</b> wanted to join but has canceled his join request</p>
 </div>
 </div>

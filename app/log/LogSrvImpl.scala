@@ -9,7 +9,7 @@ import settings.membership.Organization
 import settings.membership.MembershipSrv
 import utils.TransacTransitionExec
 import com.google.inject.ImplementedBy
-import settings.account.AccountId
+import settings.account.Account
 
 @ImplementedBy(classOf[LogDaoImpl])
 trait LogDao {
@@ -23,7 +23,7 @@ trait LogDao {
 class LogSrvImpl @Inject() (membershipSrv: MembershipSrv, logDao: LogDao, transacTransitionExec: TransacTransitionExec, eventsSourcesKnower: EventsSourcesKnower) extends LogSrv {
 
 	override def getEventsAfter(userId: User.Id, getEventsAfterCmd: GetEventsAfterCmd): Transition[TransacMode, Seq[Event]] = transacTransitionExec.inTransaction {
-		val accountId = AccountId(userId, getEventsAfterCmd.accountTag)
+		val accountId = Account.Id(userId, getEventsAfterCmd.accountTag)
 		membershipSrv.getOrganizationOf(accountId).flatMap {
 			case None => Transition.unit(Seq())
 			case Some(organizationId) =>

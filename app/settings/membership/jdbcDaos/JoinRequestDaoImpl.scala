@@ -19,9 +19,9 @@ import utils.Transition
 import utils.TransacMode
 import log.events.joinRequest.JoinRequestEventDto
 import java.sql.Timestamp
-import settings.account.AccountId
+import settings.account.Account
 import settings.account.AccountDaoImpl
-import settings.membership.Member
+import settings.membership.Icon
 import log.events.joinRequest.JoinResponseEventDto
 import anorm.SqlParser._
 import log.events.joinRequest.JoinCancelEventDto
@@ -33,7 +33,7 @@ import log.events.joinRequest.JoinReject
  *
  */
 class JoinRequestDaoImpl extends JoinRequestDao {
-	override def insert(accountId: AccountId, organizationId: Organization.Id, requestEventId: Event.Id) = JdbcTransacMode.inConnection { implicit connection =>
+	override def insert(accountId: Account.Id, organizationId: Organization.Id, requestEventId: Event.Id) = JdbcTransacMode.inConnection { implicit connection =>
 		val sql = SQL"""
 insert into orga_join_request (user_id, account_tag, organization_id, request_event_id)
 values (${accountId.userId}, ${accountId.tag}, $organizationId, $requestEventId)"""
@@ -41,21 +41,27 @@ values (${accountId.userId}, ${accountId.tag}, $organizationId, $requestEventId)
 		JoinRequest(accountId, organizationId, requestEventId)
 	}
 
-	override def insertCancelEvent(accountId: AccountId, cancelEventId: Event.Id, cancelEventInstant: Event.Instant): Transition[TransacMode, Int] =
+	override def insertCancelEvent(accountId: Account.Id, cancelEventId: Event.Id, cancelEventInstant: Event.Instant, becauseAccepted:Boolean): Transition[TransacMode, Int] =
 		JdbcTransacMode.inConnection { implicit connection =>
 			val sql = SQL"""
-update orga_join_request set cancel_event_id = $cancelEventId
-where user_id = ${accountId.userId} and account_tag = ${accountId.tag} and cancel_event_id is null"""
-			sql.executeUpdate()
+update orga_join_request set cancel_event_id = $cancelEventId, because_accepted = $becauseAccepted
+where user_id = ${accountId.userId} AND account_tag = ${accountId.tag} AND cancel_event_id is null"""
+			sql.executeUpdate() match {
+				case 0 => 0
+				case 1 =>
+					// For efficiency sake, an indexed key of the orga_join_request register is put in the orga_event register. This will speed up the search of a cancel event given its cancel_event_id.
+					SQL"update orga_event set user_id = ${accountId.userId}, med_fk1 = ${accountId.tag} where id = $cancelEventId".executeUpdate.ensuring(_ == 1)
+				case _ => throw new AssertionError
+			}
 		}
 
-	override def getJoinRequestStatusOf(accountId: AccountId): Transition[TransacMode, Option[JoinRequestStatus]] =
+	override def getJoinRequestStatusOf(accountId: Account.Id): Transition[TransacMode, Option[JoinRequestStatus]] =
 		JdbcTransacMode.inConnection { implicit connection =>
 			val sql = SQL"""
 select o.*, jr.rejection_msg
 from orga_join_request jr
 inner join orga_organization o on(o.id = jr.organization_id)
-where jr.user_id = ${accountId.userId} and jr.account_tag = ${accountId.tag} and jr.cancel_event_id is null"""
+where jr.user_id = ${accountId.userId} AND jr.account_tag = ${accountId.tag} AND jr.cancel_event_id is null"""
 			sql.as(JoinRequestDaoImpl.joinRequestStatusParser.singleOpt)
 		}
 
@@ -65,9 +71,9 @@ where jr.user_id = ${accountId.userId} and jr.account_tag = ${accountId.tag} and
 			val sql = SQL"""
 select jr.request_event_id, e.instant, a.name, jr.rejection_msg
 from orga_join_request jr
-inner join orga_account a on (a.user_id = jr.user_id and a.tag = jr.account_tag)
+inner join orga_account a on (a.user_id = jr.user_id AND a.tag = jr.account_tag)
 inner join orga_event e on (e.id = jr.request_event_id)
-where jr.request_event_id > $eventId and jr.organization_id = $organizationId"""
+where jr.request_event_id > $eventId AND jr.organization_id = $organizationId"""
 			sql.as(JoinRequestDaoImpl.joinRequestEventDtoParser.*)
 		}
 
@@ -76,47 +82,52 @@ where jr.request_event_id > $eventId and jr.organization_id = $organizationId"""
 		sql.as(JoinRequestDaoImpl.joinRequestParser.singleOpt)
 	}
 
-	override def insertRejectionEvent(rejectionEventId: Event.Id, requesterAccountId: AccountId, requestEventId: Event.Id, rejectionMsg: String, rejecterMemberTag: Member.Tag): Transition[TransacMode, JoinReject] =
+	override def insertRejectionEvent(rejectionEventId: Event.Id, requesterAccountId: Account.Id, requestEventId: Event.Id, rejectionMsg: String, rejecterMemberTag: Icon.Tag): Transition[TransacMode, JoinReject] =
 		JdbcTransacMode.inConnection { implicit connection =>
 			val sql = SQL"""
 update orga_join_request
-	set rejection_msg = ${rejectionMsg}, rejection_event_id = ${rejectionEventId}, rejecter_member_tag = ${rejecterMemberTag}
-where user_id	= ${requesterAccountId.userId} and account_tag = ${requesterAccountId.tag} and request_event_id = $requestEventId"""
-			sql.executeUpdate()
+	set rejection_msg = ${rejectionMsg}, rejection_event_id = ${rejectionEventId}, rejecter_icon_tag = ${rejecterMemberTag}
+where user_id	= ${requesterAccountId.userId} AND account_tag = ${requesterAccountId.tag} AND request_event_id = $requestEventId"""
+			val count = sql.executeUpdate()
+			if (count > 1) throw new AssertionError
+			else if (count == 1)
+				SQL"update orga_event set user_id = ${requesterAccountId.userId}, med_fk1 = ${requesterAccountId.tag} where id = $rejectionEventId".executeUpdate.ensuring(_ == 1)
 			JoinReject(rejectionEventId, requesterAccountId, requestEventId, rejectionMsg, rejecterMemberTag)
 		}
 
-	def getJoinRejectionEventsAfter(oEventId: Option[Event.Id], organizationId: Organization.Id): Transition[TransacMode, Seq[JoinResponseEventDto]] =
+	override def getJoinRejectionEventsAfter(oEventId: Option[Event.Id], organizationId: Organization.Id): Transition[TransacMode, Seq[JoinResponseEventDto]] = {
+		val eventId = oEventId.getOrElse(0L)
+		val sql = SQL"""
+select e.id, e.instant, jr.request_event_id, rejecterIcon.name, requesterAcc.name, jr.rejection_msg
+from orga_event e
+inner join orga_join_request jr on (jr.user_id = e.user_id AND jr.account_tag = e.med_fk1 AND jr.rejection_event_id = e.id)
+inner join orga_icon rejecterIcon on (rejecterIcon.organization_id = jr.organization_id AND rejecterIcon.tag = jr.rejecter_icon_tag)
+inner join orga_account requesterAcc on (requesterAcc.user_id = jr.user_id AND requesterAcc.tag = jr.account_tag)
+where e.id > $eventId AND jr.organization_id = $organizationId"""
+		val parser = get[Event.Id](1) ~ get[Event.Instant](2) ~ get[Event.Id](3) ~ str(4) ~ str(5) ~ str(6) map {
+			case id ~ instant ~ affectedEvent ~ responderMemberName ~ requesterAccountName ~ rejectionMsg =>
+				JoinResponseEventDto(id, instant, Seq(affectedEvent), responderMemberName, requesterAccountName, None, Some(rejectionMsg))
+		}
 		JdbcTransacMode.inConnection { implicit connection =>
-			val eventId = oEventId.getOrElse(0L)
-			val sql = SQL"""
-select jr.rejection_event_id, e.instant, jr.request_event_id, rejecterMem.name, requesterAcc.name, jr.rejection_msg
-from orga_join_request jr
-inner join orga_event e on (e.id = jr.rejection_event_id)  	    
-inner join orga_member rejecterMem on (rejecterMem.organization_id = jr.organization_id and rejecterMem.tag = jr.rejecter_member_tag)
-inner join orga_account requesterAcc on (requesterAcc.user_id = jr.user_id and requesterAcc.tag = jr.account_tag)
-where jr.rejection_event_id > $eventId and jr.organization_id = $organizationId"""
-			val parser = get[Event.Id](1) ~ get[Event.Instant](2) ~ get[Event.Id](3) ~ str(4) ~ str(5) ~ str(6) map {
-				case id ~ instant ~ affectedEvent ~ responderMemberName ~ requesterAccountName ~ rejectionMsg =>
-					JoinResponseEventDto(id, instant, Seq(affectedEvent), responderMemberName, requesterAccountName, None, Some(rejectionMsg))
-			}
 			sql.as(parser.*)
 		}
+	}
 
-	def getJoinCancelEventsAfter(oEventId: Option[Event.Id], organizationId: Organization.Id): Transition[TransacMode, Seq[JoinCancelEventDto]] =
+	override def getJoinCancelEventsAfter(oEventId: Option[Event.Id], organizationId: Organization.Id): Transition[TransacMode, Seq[JoinCancelEventDto]] = {
+		val eventId = oEventId.getOrElse(0L)
+		val sql = SQL"""
+select e.id, e.instant, a.name, jr.request_event_id
+from orga_event e
+inner join orga_join_request jr on (jr.user_id = e.user_id AND jr.account_tag = e.med_fk1 AND jr.cancel_event_id = e.id)			  
+inner join orga_account a on (a.user_id = e.user_id AND a.tag = e.med_fk1)
+where e.id > $eventId AND organization_id = $organizationId AND jr.because_accepted = false AND jr.rejection_event_id is null"""
+		val parser = get[Event.Id](1) ~ get[Event.Instant](2) ~ str(3) ~ get[Event.Id](4) map {
+			case id ~ instant ~ accountName ~ affectedEvent => JoinCancelEventDto(id, instant, accountName, Seq(affectedEvent))
+		}
 		JdbcTransacMode.inConnection { implicit connection =>
-			val eventId = oEventId.getOrElse(0L)
-			val sql = SQL"""
-select jr.cancel_event_id, e.instant, a.name, jr.request_event_id
-from orga_join_request jr
-inner join orga_account a on (a.user_id = jr.user_id and a.tag = jr.account_tag)
-inner join orga_event e on (e.id = jr.cancel_event_id)
-where cancel_event_id > $eventId and organization_id = $organizationId"""
-			val parser = get[Event.Id](1) ~ get[Event.Instant](2) ~ str(3) ~ get[Event.Id](4) map {
-				case id ~ instant ~ accountName ~ affectedEvent => JoinCancelEventDto(id, instant, accountName, Seq(affectedEvent))
-			}
 			sql.as(parser.*)
 		}
+	}
 }
 
 object JoinRequestDaoImpl {
@@ -141,7 +152,7 @@ object JoinRequestDaoImpl {
 	}
 
 	//	val joinRejectParser: RowParser[JoinReject] = {
-	//		str("rejection_msg") ~ get[Member.Tag]("rejecter_member_tag") ~ get[Event.Id]("rejection_event_id") map {
+	//		str("rejection_msg") ~ get[Member.Tag]("rejecter_icon_tag") ~ get[Event.Id]("rejection_event_id") map {
 	//			case rejectionMsg ~ rejecterMemberTag ~ rejectionEventId => JoinReject(rejectionEventId, requesterAccountId, requestEventId, rejectionMsg, rejecterMemberTag)
 	//		}
 	//	}

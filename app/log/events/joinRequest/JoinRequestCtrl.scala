@@ -25,9 +25,9 @@ import log.RetroEvent
 import scala.util.Try
 import scala.util.Success
 import scala.util.Failure
-import settings.account.AccountId
+import settings.account.Account
 import settings.membership.Organization
-import settings.membership.Member
+import settings.membership.Icon
 
 /**
  * @author Gustavo
@@ -60,9 +60,9 @@ object JoinResponseEventDto {
 	implicit val jsonFormat = Json.writes[JoinResponseEventDto].transform { x => x.as[JsObject] + ("type" -> JsString("joinResponse")) }
 }
 
-case class JoinRequest(accountId: AccountId, organizationId: Organization.Id, requestEventId: Event.Id)
+case class JoinRequest(accountId: Account.Id, organizationId: Organization.Id, requestEventId: Event.Id)
 
-case class JoinReject(rejectionEventId: Event.Id, requesterAccountId: AccountId, requestEventId:Event.Id, rejectionMsg:String, rejecterMemberTag:Member.Tag)
+case class JoinReject(rejectionEventId: Event.Id, requesterAccountId: Account.Id, requestEventId:Event.Id, rejectionMsg:String, rejecterMemberTag:Icon.Tag)
 
 
 @ImplementedBy(classOf[JoinRequestSrvImpl])
