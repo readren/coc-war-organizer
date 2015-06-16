@@ -10,6 +10,7 @@ import play.api.db.DB
 import anorm._
 import anorm.SqlParser._
 import scala.concurrent.ExecutionContext.Implicits.global
+import utils.executionContexts._
 
 /**
  * The DAO to store the OAuth2 information.
@@ -47,7 +48,7 @@ values (${loginInfo.providerID}, ${loginInfo.providerKey}, ${authInfo.accessToke
 				}
 				if (count == 1) authInfo
 				else throw new AssertionError(s"oauth2 info insert failed: count=$count, loginInfo=$loginInfo");
-		}
+		}(dbWriteOperations)
 	}
 
 	/**
@@ -65,7 +66,7 @@ where oi.provider_id = ${loginInfo.providerID} and oi.provider_key = ${loginInfo
 			DB.withConnection { implicit connection =>
 				sql.as(oauthInfoParser.singleOpt)
 			}
-		}
+		}(simpleDbLookups)
 	}
 }
 

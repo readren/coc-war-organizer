@@ -12,6 +12,8 @@ import play.api.Play.current
 import play.api.db.DB
 import anorm.SqlParser._
 import scala.concurrent.ExecutionContext.Implicits.global
+import utils.executionContexts._
+
 
 /**
  * Give access to the user object.
@@ -30,7 +32,7 @@ class UserDAOImpl extends UserDAO {
 			DB.withConnection { implicit connection =>
 				sql.as(userParser.singleOpt)
 			}
-		}
+		}(simpleDbLookups)
 	}
 
 	/**
@@ -45,7 +47,7 @@ class UserDAOImpl extends UserDAO {
 			DB.withConnection { implicit connection =>
 				sql.as(userParser.singleOpt)
 			}
-		}
+		}(simpleDbLookups)
 	}
 
 	/**
@@ -72,7 +74,7 @@ where user_id = ${user.id}::uuid""";
 			}
 			if (count == 1) user
 			else throw new AssertionError(s"User update failed: count=$count, user=$user");
-		}
+		}(dbWriteOperations)
 	}
 
 	def insert(user: User) = {
@@ -102,7 +104,7 @@ insert into auth_user (
 			}
 			if (count == 1) user
 			else throw new AssertionError(s"User insert failed: count=$count, user=$user");
-		}
+		}(dbWriteOperations)
 	}
 }
 

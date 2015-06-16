@@ -12,6 +12,8 @@ import anorm._
 import anorm.SqlParser._
 import scala.concurrent.ExecutionContext.Implicits.global
 import play.api.Play.current
+import utils.executionContexts._
+
 
 /**
  * The DAO to store the password information.
@@ -56,7 +58,7 @@ values (${loginInfo.providerID}, ${loginInfo.providerKey}, ${authInfo.hasher}, $
 				}
 				if (count != 1) throw new AssertionError(s"loginInfo=${loginInfo}, count=${count}")
 				else authInfo
-		}
+		}(dbWriteOperations)
 
 	/**
 	 * Finds the password info which is linked with the specified login info.
@@ -72,7 +74,7 @@ where provider_id=${loginInfo.providerID} and provider_key=${loginInfo.providerK
 		DB.withConnection { implicit connection =>
 			sql.as(authPasswordParser.singleOpt)
 		}
-	}
+	}(simpleDbLookups)
 }
 
 /**

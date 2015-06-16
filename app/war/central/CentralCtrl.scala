@@ -7,6 +7,7 @@ import settings.membership.Icon
 import settings.account.Account
 import settings.membership.Organization
 import common.typeAliases._
+import play.api.libs.json.Json
 
 case class UndoCmd(actor: Account.Tag, targetEventId: WarEvent.Id) extends Command
 case class UndoEvent(wei: WarEventInfo, undoneEventId: WarEvent.Id) extends WarEventBase(wei)
@@ -45,7 +46,7 @@ case class EndWarEvent(wei: WarEventInfo) extends WarEventBase(wei)
 class CentralCtrl extends Controller {
 
 	def startPreparation = Action.async(parse.json) { request =>
-		Future.successful(Ok(""))
+		Future.successful(Ok(Json.toJson("")))
 	}
 
 	def startBattle = Action.async(parse.json) { request =>
@@ -61,7 +62,7 @@ class CentralCtrl extends Controller {
 	}
 
 	def removeParticipant = Action.async(parse.json) { request =>
-		Future.successful(Ok(""))
+		Future.successful(Ok("")))
 	}
 
 }
