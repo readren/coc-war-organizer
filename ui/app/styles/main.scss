@@ -235,17 +235,75 @@ a {
 	background-image:url('/assets/images/wild_oliva.png');
 }
 
+
+/*** ---- distribución BEGIN----***/
+
+.flexColumn {
+	display: flex;
+	flex-flow: column wrap;
+}
+
+.flexRow {
+	display: flex;
+	flex-flow: row wrap;
+}
+
+.flexColum.noWrap,
+.flexRow.wrap {
+	flex-wrap: nowrap;
+}
+
+.flexColumn > div,
+.flexRow > div {
+	margin: 0.4em;
+}
+
+.alignCenter {
+	align-items: center;
+}
+.alignStart {
+	align-items: fext-start;
+}
+.alignEnd {
+	align-items: flex-end;
+}
+.alignBaseline {
+	align-items: baseline;
+}
+.alignStretch {
+	align-items: stretch;
+}
+
+.justifyStart {
+	justify-content: flex-start;
+}
+.justifyEnd {
+	justify-content: flex-end;
+}
+.justifyCenter {
+	justify-content: center;
+}
+.justifySpaceAround {
+	justify-content: space-around;
+}
+
+.justifySpaceAround > button {
+	margin: 0.6em;
+}
+
 .flexCenteredColumn {
 	display: flex;
 	flex-flow: column wrap;
 	align-items: center;
 }
-
 .flexBaselineRow {
 	display: flex;
 	flex-flow: row wrap;
 	align-items: baseline;
 }
+
+/*** ---- distribución END----***/
+
 
 .buttons-bar {
 	display:flex;

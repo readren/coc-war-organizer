@@ -5,7 +5,7 @@ package log.events.joinRequest
 
 import auth.models.User
 import javax.inject.Inject
-import log.Event
+import log.OrgaEvent
 import settings.account.Account
 import settings.membership.JoinRequestDao
 import settings.membership.MembershipSrv
@@ -41,7 +41,7 @@ class JoinRequestSrvImpl @Inject() (transacTransitionExce: TransacTransitionExec
 	case class CheckBonus(responderMember: IconDto, joinRequest: JoinRequest, requesterAccount: Account)
 
 	/**Checks if the responder satisfies all the following: the roleRestriction, the join request still exists, the requesters still exists, and the responders belongs to the organization the requesters ask to join to. */
-	private def check(responderAccountId: Account.Id, requestEventId: Event.Id, roleRestriction: Role => Boolean): Transition[TransacMode, Try[CheckBonus]] = {
+	private def check(responderAccountId: Account.Id, requestEventId: OrgaEvent.Id, roleRestriction: Role => Boolean): Transition[TransacMode, Try[CheckBonus]] = {
 		iconDao.findByAccount(responderAccountId).flatMap {
 			case Some(responderMember) if roleRestriction(responderMember.role) =>
 				joinRequestDao.findByEventId(requestEventId).flatMap {
@@ -86,7 +86,9 @@ class JoinRequestSrvImpl @Inject() (transacTransitionExce: TransacTransitionExec
 					}
 					responseEvent <- logSrv.newEvent()
 					_ <- membershipDao.insert(responderIcon.organizationId, requesterIcon.tag, joinRequest.accountId, acceptCmd.requestEventId, responseEvent._1, responderIcon.tag)
-				} yield Success(JoinResponseEventDto(responseEvent._1, responseEvent._2, Seq(acceptCmd.requestEventId), responderIcon.name, requesterAccount.name, Some(requesterIcon.name), None))
+				} yield 
+					Success(JoinResponseEventDto(responseEvent._1, responseEvent._2, Seq(acceptCmd.requestEventId), responderIcon.name, requesterAccount.name, Some(requesterIcon.name), None))
+				
 		}
 	}
 
@@ -103,11 +105,11 @@ class JoinRequestSrvImpl @Inject() (transacTransitionExce: TransacTransitionExec
 		}
 	}
 
-	override def getEventsAfter(eventId: Option[Event.Id], organizationId: Organization.Id): Transition[TransacMode, Seq[Event]] =
+	override def getEventsAfter(threshold:Either[OrgaEvent.Instant, Int], organizationId: Organization.Id): Transition[TransacMode, Seq[OrgaEvent]] =
 		for {
-			joinRequestEvents <- joinRequestDao.getJoinRequestEventsAfter(eventId, organizationId)
-			joinRejectionEvents <- joinRequestDao.getJoinRejectionEventsAfter(eventId, organizationId)
-			joinCancelEvents <- joinRequestDao.getJoinCancelEventsAfter(eventId, organizationId)
+			joinRequestEvents <- joinRequestDao.getJoinRequestEventsAfter(threshold, organizationId)
+			joinRejectionEvents <- joinRequestDao.getJoinRejectionEventsAfter(threshold, organizationId)
+			joinCancelEvents <- joinRequestDao.getJoinCancelEventsAfter(threshold, organizationId)
 		} yield (joinRequestEvents ++ joinRejectionEvents ++ joinCancelEvents)
 
 }

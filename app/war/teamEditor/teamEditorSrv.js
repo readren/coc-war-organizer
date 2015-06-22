@@ -1,18 +1,18 @@
 'use strict';
+/*global app: false */
 
 /**
  * @ngdoc service
- * @name uiApp.centralSrv
+ * @name uiApp.teamEditorSrv
  * @description
- * # centralSrv
+ * # teamEditorSrv
  * Factory in the uiApp.
  */
-angular.module('uiApp')
-  .factory('centralSrv', function ($http) {
+app.factory('teamEditorSrv', function () {
     // Service logic
     // ...
 
-    var currentStatePromise = $http.post('/')
+    var meaningOfLife = 42;
 
     // Public API here
     return {

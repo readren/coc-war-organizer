@@ -6,7 +6,7 @@ import com.google.inject.ImplementedBy
 
 import auth.models.User
 import javax.inject.Inject
-import log.Event
+import log.OrgaEvent
 import log.LogSrv
 import log.LogSrvImpl
 import log.events.joinRequest.JoinCancelEventDto
@@ -20,33 +20,34 @@ import settings.account.AccountSrv
 import utils.TransacMode
 import utils.TransacTransitionExec
 import utils.Transition
+import common.typeAliases._
 
 trait MembershipDao {
-	def insert(organizationId: Organization.Id, memberTag: Icon.Tag, accountId: Account.Id, requestEventId: Event.Id, acceptedEventId: Event.Id, accepterMemberTag: Icon.Tag): Transition[TransacMode, Membership]
-	def insertAbandonEvent(accountId: Account.Id, abandonEventId: Event.Id): Transition[TransacMode, Int]
-	def getJoinAcceptedEventsAfter(eventId: Option[Event.Id], organizationId: Organization.Id): Transition[TransacMode, Seq[JoinResponseEventDto]]
-	def getAbandonEventsAfter(oEventId: Option[Event.Id], organizationId: Organization.Id): Transition[TransacMode, Seq[AbandonEventDto]]
+	def insert(organizationId: Organization.Id, memberTag: Icon.Tag, accountId: Account.Id, requestEventId: OrgaEvent.Id, acceptedEventId: OrgaEvent.Id, accepterMemberTag: Icon.Tag): Transition[TransacMode, Unit]
+	def insertAbandonEvent(accountId: Account.Id, abandonEventId: OrgaEvent.Id): Transition[TransacMode, Int]
+	def getJoinAcceptedEventsAfter(threshold: Either[OrgaEvent.Instant, Int], organizationId: Organization.Id): Transition[TransacMode, Seq[JoinResponseEventDto]]
+	def getAbandonEventsAfter(threshold: Either[OrgaEvent.Instant, Int], organizationId: Organization.Id): Transition[TransacMode, Seq[AbandonEventDto]]
 }
 
 case class JoinRequestStatus(organization: Organization, rejectMsg: Option[String])
 trait JoinRequestDao {
 	def getJoinRequestStatusOf(accountId: Account.Id): Transition[TransacMode, Option[JoinRequestStatus]]
-	def insert(accountId: Account.Id, organizationId: Organization.Id, eventId: Event.Id): Transition[TransacMode, JoinRequest]
-	def insertCancelEvent(accountId: Account.Id, cancelEventId: Event.Id, cancelEventInstant: Event.Instant, becauseAccepted:Boolean): Transition[TransacMode, Int]
-	def getJoinRequestEventsAfter(eventId: Option[Event.Id], organizationId: Organization.Id): Transition[TransacMode, Seq[JoinRequestEventDto]]
-	def getJoinRejectionEventsAfter(eventId: Option[Event.Id], organizationId: Organization.Id): Transition[TransacMode, Seq[JoinResponseEventDto]]
-	def getJoinCancelEventsAfter(eventId: Option[Event.Id], organizationId: Organization.Id): Transition[TransacMode, Seq[JoinCancelEventDto]]
-	def findByEventId(eventId: Event.Id): Transition[TransacMode, Option[JoinRequest]]
-	def insertRejectionEvent(rejectionEventId: Event.Id, requesterAccountId: Account.Id, requestEventId: Event.Id, rejectionMsg: String, rejecterMemberTag: Icon.Tag): Transition[TransacMode, JoinReject]
+	def insert(accountId: Account.Id, organizationId: Organization.Id, eventId: OrgaEvent.Id): Transition[TransacMode, JoinRequest]
+	def insertCancelEvent(accountId: Account.Id, cancelEventId: OrgaEvent.Id, cancelEventInstant: OrgaEvent.Instant, becauseAccepted: Boolean): Transition[TransacMode, Int]
+	def getJoinRequestEventsAfter(threshold: Either[OrgaEvent.Instant, Int], organizationId: Organization.Id): Transition[TransacMode, Seq[JoinRequestEventDto]]
+	def getJoinRejectionEventsAfter(threshold: Either[OrgaEvent.Instant, Int], organizationId: Organization.Id): Transition[TransacMode, Seq[JoinResponseEventDto]]
+	def getJoinCancelEventsAfter(threshold: Either[OrgaEvent.Instant, Int], organizationId: Organization.Id): Transition[TransacMode, Seq[JoinCancelEventDto]]
+	def findByEventId(eventId: OrgaEvent.Id): Transition[TransacMode, Option[JoinRequest]]
+	def insertRejectionEvent(rejectionEventId: OrgaEvent.Id, requesterAccountId: Account.Id, requestEventId: OrgaEvent.Id, rejectionMsg: String, rejecterMemberTag: Icon.Tag): Transition[TransacMode, JoinReject]
 }
 
 trait IconDao {
 	def insert(organizationId: Organization.Id, name: String, role: Role, accountId: Account.Id): Transition[TransacMode, Icon.Tag]
 	/** Gives the icon held by the received account in his current organization */
 	def findByAccount(accountId: Account.Id): Transition[TransacMode, Option[IconDto]]
-	def findByHolder(organizationId:Organization.Id, holderAccountId: Account.Id): Transition[TransacMode, Option[IconDto]]
-	def insertRoleChangeEvent(roleChangeEventId:Event.Id, organizationId:Organization.Id, affectedIconTag: Icon.Tag, newRole: Role, previousRole: Role, changerIconTag: Icon.Tag): Transition[TransacMode, Unit] 
-  def getRoleChangeEventsAfter(eventId: Option[Event.Id], organizationId: Organization.Id): Transition[TransacMode, Seq[RoleChangeEventDto]] 
+	def findByHolder(organizationId: Organization.Id, holderAccountId: Account.Id): Transition[TransacMode, Option[IconDto]]
+	def insertRoleChangeEvent(roleChangeEventId: OrgaEvent.Id, organizationId: Organization.Id, affectedIconTag: Icon.Tag, newRole: Role, previousRole: Role, changerIconTag: Icon.Tag): Transition[TransacMode, Unit]
+	def getRoleChangeEventsAfter(threshold: Either[OrgaEvent.Instant, Int], organizationId: Organization.Id): Transition[TransacMode, Seq[RoleChangeEventDto]]
 }
 
 trait OrganizationDao {
@@ -64,7 +65,7 @@ trait OrganizationDao {
 }
 
 class MembershipSrvImpl @Inject() (transacTransitionExec: TransacTransitionExec, logSrv: LogSrv, organizationDao: OrganizationDao, membershipDao: MembershipDao, joinRequestDao: JoinRequestDao, iconDao: IconDao, accountSrv: AccountSrv)
-	extends MembershipSrv {
+		extends MembershipSrv {
 	val logger = Logger(this.getClass())
 
 	override def getMembershipStatusOf(accountId: Account.Id): Transition[TransacMode, MembershipStatusDto] = transacTransitionExec.inTransaction {
@@ -91,13 +92,11 @@ class MembershipSrvImpl @Inject() (transacTransitionExec: TransacTransitionExec,
 					logSrv.newEvent().flatMap { event =>
 						iconDao.findByHolder(organization.id, accountId).flatMap {
 							case Some(icon) if icon.role.canJoinDirectly =>
-								membershipDao.insert(organization.id, icon.tag, accountId, event._1, event._1, icon.tag).map { membership =>
-									MembershipStatusDto(so, Some(icon), None)
-								}
+								for (_ <- membershipDao.insert(organization.id, icon.tag, accountId, event._1, event._1, icon.tag))
+									yield MembershipStatusDto(so, Some(icon), None)
 							case _ =>
-								joinRequestDao.insert(accountId, sendJoinRequestCmd.organizationId, event._1).map { joinRequest =>
-									MembershipStatusDto(so, None, None)
-								}
+								for (_ <- joinRequestDao.insert(accountId, sendJoinRequestCmd.organizationId, event._1))
+									yield MembershipStatusDto(so, None, None)
 						}
 					}
 			}
@@ -129,28 +128,29 @@ class MembershipSrvImpl @Inject() (transacTransitionExec: TransacTransitionExec,
 		}
 	}
 
-	override def createOrganization(userId: User.Id, createOrganizationCmd: CreateOrganizationCmd): Transition[TransacMode, (Organization, IconDto, Membership)] =
+	override def createOrganization(userId: User.Id, createOrganizationCmd: CreateOrganizationCmd): Transition[TransacMode, (Organization, IconDto)] =
 		transacTransitionExec.inTransaction {
-			organizationDao.insert(createOrganizationCmd).flatMap { organization =>
-				val accountId = Account.Id(userId, createOrganizationCmd.accountTag)
-				val name = createOrganizationCmd.iconName.getOrElse(createOrganizationCmd.accountName)
-				iconDao.insert(organization.id, name, Leader, accountId).flatMap { iconTag =>
-					logSrv.newEvent().flatMap { event =>
-						membershipDao.insert(organization.id, iconTag, accountId, event._1, event._1, iconTag).map { membership =>
-							(organization, IconDto(iconTag, name, organization.id, Leader), membership)
-						}
-					}
-				}
-			}
+			for {
+				organization <- organizationDao.insert(createOrganizationCmd)
+				accountId = Account.Id(userId, createOrganizationCmd.accountTag)
+				name = createOrganizationCmd.iconName.getOrElse(createOrganizationCmd.accountName)
+				iconTag <- iconDao.insert(organization.id, name, Leader, accountId)
+				event <- logSrv.newEvent()
+				_ <- membershipDao.insert(organization.id, iconTag, accountId, event._1, event._1, iconTag)
+			} yield (organization, IconDto(iconTag, name, organization.id, Leader))
 		}
 
 	override def getOrganizationOf(accountId: Account.Id): Transition[TransacMode, Option[Organization.Id]] = organizationDao.findOf(accountId)
 
-	def getEventsAfter(eventId: Option[Event.Id], organizationId: Organization.Id): Transition[TransacMode, Seq[Event]] =
+	override def getEventsAfter(threshold: Either[OrgaEvent.Instant, Int], organizationId: Organization.Id): Transition[TransacMode, Seq[OrgaEvent]] =
 		for {
-			joinAcceptedEvents <- membershipDao.getJoinAcceptedEventsAfter(eventId, organizationId)
-			abandonEvents <- membershipDao.getAbandonEventsAfter(eventId, organizationId)
-			roleChangeEvents <- iconDao.getRoleChangeEventsAfter(eventId, organizationId)
+			joinAcceptedEvents <- membershipDao.getJoinAcceptedEventsAfter(threshold, organizationId)
+			abandonEvents <- membershipDao.getAbandonEventsAfter(threshold, organizationId)
+			roleChangeEvents <- iconDao.getRoleChangeEventsAfter(threshold, organizationId)
 		} yield (joinAcceptedEvents ++ abandonEvents ++ roleChangeEvents)
+
+	override def getOrgaStatus(accountId: Account.Id, cmd: GetOrgaStatusCmd): TiTac[GetOrgaStatusDto] = {
+		???
+	}
 
 }

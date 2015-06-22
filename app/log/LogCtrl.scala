@@ -15,55 +15,49 @@ import utils.Transition
 import utils.executionContexts.simpleDbLookups
 import settings.account.Account
 import com.google.inject.ImplementedBy
+import utils.executionContexts._
+import common.TypicalActions
+import common.Command
 
 /**
  * @author Gustavo
  *
  */
 
-case class GetEventsAfterCmd(eventId: Option[Event.Id], accountTag: Account.Tag)
+case class GetEventsAfterCmd(eventInstant: Option[OrgaEvent.Instant], actor: Account.Tag) extends Command
 object GetEventsAfterCmd {
 	implicit val jsonFormat = Json.reads[GetEventsAfterCmd]
-
 }
 
-trait Event {
-	val id: Event.Id
-	val instant: Event.Instant
+trait OrgaEvent {
+	val id: OrgaEvent.Id
+	val instant: OrgaEvent.Instant
 	def toJson: JsValue
 }
-object Event {
+object OrgaEvent {
 	type Id = Long
 	type Instant = org.joda.time.DateTime
-	implicit def jsonWrites: Writes[Event] = Writes[Event] ( _.toJson )
+	implicit def jsonWrites: Writes[OrgaEvent] = Writes[OrgaEvent] ( _.toJson )
 }
 
-/**An event that affects the state of something initiated by a previous events.
- * Design decision: The way in which the state, of the thing that was initiated by previous event, is affected by a subsequent [[RetroEvent]] is determined by the affected event handler, and the effect depends on the [[RetroEvent]]  */
-trait RetroEvent extends Event {
-	/**Ids of the events that initiated the things whose states are affected by this event */
-	val affectedEvents: Seq[Event.Id]
+/**An event that affects the state of some client side independent machine conceived by the effect of an event sent previously.
+ * Design decision: The way in which the state of an independent machine that was initiated by an event is affected by a subsequent [[RetroEvent]] is determined by the a handler of the affected independent machine. Said handler receives the [[RetroEvent]] to know how to react.  */
+trait RetroEvent extends OrgaEvent {
+	/**Ids of the events that have been previously sent to the client and have conceived a independent machine (in the client) whose state should be eventually updated after the action announced by this event is committed. */
+	val affectedEvents: Seq[OrgaEvent.Id]
 }
 
-trait EventPrj {}
+
 
 @ImplementedBy(classOf[LogSrvImpl])
 trait LogSrv {
-	def getEventsAfter(userId:User.Id, getEventsAfterCmd: GetEventsAfterCmd): Transition[TransacMode, Seq[Event]]
-	def newEvent(): Transition[TransacMode, (Event.Id, Event.Instant)]
-//	def log(eventPrj: EventPrj): Transition[TransacMode, Event]
+	def getEventsAfter(accountId:Account.Id, getEventsAfterCmd: GetEventsAfterCmd): Transition[TransacMode, Seq[OrgaEvent]]
+	def newEvent(): Transition[TransacMode, (OrgaEvent.Id, OrgaEvent.Instant)]
 }
 
 
-class LogCtrl @Inject() (implicit val env: Environment[User, JWTAuthenticator], transacTransitionExec: TransacTransitionExec, accountSrv: AccountSrv, logSrv: LogSrv)
-	extends Silhouette[User, JWTAuthenticator] {
+class LogCtrl @Inject() (implicit val env: Environment[User, JWTAuthenticator], val tte: TransacTransitionExec, logSrv: LogSrv)
+	extends Silhouette[User, JWTAuthenticator] with TypicalActions[JWTAuthenticator] {
 
-	def getEventsAfter = SecuredAction.async(parse.json) { implicit request =>
-		val getEventsAfterCmd = request.body.as[GetEventsAfterCmd]
-			transacTransitionExec.autoFuture(simpleDbLookups) {
-				logSrv.getEventsAfter(request.identity.id, getEventsAfterCmd).map { response =>
-					Ok(Json.toJson(response))
-				}		
-		}
-	}
+	def getEventsAfter = typicalAction(simpleDbLookups, logSrv.getEventsAfter _)
 }

@@ -27,7 +27,8 @@ module.exports = function (grunt) {
       // configurable paths
       app: require('./bower.json').appPath || 'app',
       dist: 'dist',
-      playApp: '../app'
+      playApp: '../app',
+      playTest: '../test'
     },
 
     // Include your sources into your HTML files automatically.
@@ -57,7 +58,7 @@ module.exports = function (grunt) {
         }
       },
       jsTest: {
-        files: ['test/spec/**/*.js'],
+        files: ['test/spec/**/*.js','<% playTest %>/**/*.js'],
         tasks: ['newer:jshint:test', 'karma']
       },
       compass: {

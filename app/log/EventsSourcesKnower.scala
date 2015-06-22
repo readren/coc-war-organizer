@@ -19,9 +19,9 @@ import settings.membership.Organization
  */
 
 trait EventsSource[+E] {
-	def getEventsAfter(eventId: Option[Event.Id], organizationId:Organization.Id): Transition[TransacMode, Seq[E]]
+	def getEventsAfter(threshold: Either[OrgaEvent.Instant, Int], organizationId:Organization.Id): Transition[TransacMode, Seq[E]]
 }
 
 class EventsSourcesKnower @Inject() (joinRequestSrv: JoinRequestSrv, membershipSrv: MembershipSrv) {
-	val eventsSources:Seq[EventsSource[Event]] = Seq(joinRequestSrv, membershipSrv)
+	val eventsSources:Seq[EventsSource[OrgaEvent]] = Seq(joinRequestSrv, membershipSrv)
 }

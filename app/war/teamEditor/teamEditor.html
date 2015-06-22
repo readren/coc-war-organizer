@@ -1,0 +1,33 @@
+<h2>Participating team editor</h2>
+<div ng-controller="teamEditorCtrl as ctrl">
+	<div class="flexRow">
+		<div class="flexColumn alignStrech">
+			<div ng-repeat="freeIcon in ctrl.freeIcons">
+				<div style="flex-grow: 1;">{{freeIcon.name}}</div>
+				<div>
+					<button ng-click="kick out(freeIcon)">kick out</button>
+				</div>
+			</div>
+		</div>
+
+		<div class="flexColumn alignStrech">
+			<div ng-repeat="slot in ctrl.slots">
+				<div ng-show="slot.isPopupated" class="flexRow alignBaseline">
+					<div style="width: 2em;">{{slot.position}}</div>
+					<div style="flex-grow: 1;">{{slot.icon.name}}</div>
+					<div>
+						<button ng-click="pushUp(slot)">push up</button>
+						<button ng-click="pushDown(slot)">push down</button>
+						<button ng-click="remove(slot)">remove</button>
+					</div>
+				</div>
+
+				<div ng-show="!slot.isPopupated">
+					<div>{{slot.position}}</div>
+				</div>
+
+				<div></div>
+			</div>
+		</div>
+	</div>
+</div>

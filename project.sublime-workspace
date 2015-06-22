@@ -4,6 +4,10 @@
 		"selected_items":
 		[
 			[
+				"bi",
+				"BIGINT"
+			],
+			[
 				"refere",
 				"REFERENCES"
 			],
@@ -88,43 +92,25 @@
 			}
 		},
 		{
+			"contents": "#Evolutions\n\n# --- !Ups\n\nCREATE TYPE role_code AS ENUM ('L', 'C', 'V', 'N');\n\nCREATE TABLE orga_account (\n	user_id 			UUID NOT NULL REFERENCES auth_user  ON DELETE CASCADE,\n	tag					SMALLSERIAL,\n	PRIMARY KEY (user_id, tag),\n	\n	name				TEXT NOT NULL,\n	UNIQUE (user_id, name),\n	\n	description			TEXT\n);\n\nCREATE TABLE orga_event (\n	id					BIGSERIAL PRIMARY KEY,\n	instant				TIMESTAMP NOT NULL DEFAULT localtimestamp,\n	med_fk1				INTEGER DEFAULT NULL,\n	med_fk2				INTEGER DEFAULT NULL,\n	-- big_fk				BIGINT DEFAULT NULL,\n	user_id				UUID DEFAULT NULL\n);\nCREATE INDEX orga_event_instant_index ON orga_even(instant); -- TODO do a uniqueTimestamp function to avoid the necesity of the BIGSERIAL and let the instant be the primary key.\n\nCREATE TABLE orga_organization ( \n	id					SERIAL PRIMARY KEY,\n	clan_name			TEXT NOT NULL,\n	clan_tag			TEXT NOT NULL,\n	description			TEXT DEFAULT NULL,\n	UNIQUE( clan_tag, clan_name, description)\n);\n\n-- Represents a member icon. Member icons are owned by the organization, but can only be used by the account for which it was created. If an account that has left the organization joins back, he uses the same member icon he had used before. \nCREATE TABLE orga_icon (\n	organization_id			INTEGER NOT NULL  REFERENCES orga_organization  ON DELETE CASCADE,\n	tag						SERIAL,\n	PRIMARY KEY (organization_id, tag),\n	\n	name					TEXT NOT NULL,\n	present_role			role_code NOT NULL,\n	\n	holder_user_id			UUID,	-- remembers who is/was the account that is using/has used this member icon in order to be used by the referenced account if he comes back\n	holder_account_tag		SMALLINT,\n	FOREIGN KEY (holder_user_id, holder_account_tag) REFERENCES orga_account  ON DELETE SET NULL,	-- the member icon remains even after the holder account is deleted\n\n	/* this is another entity that is embedded here for efficiency. The cost is that only the last role change is remembered  */\n	role_change_event_id	BIGINT DEFAULT NULL, -- REFERENCES orga_event. For efficiency sake, when this column is updated, and indexed key of this table should be copied to the referenced orga_event row (organization_id -> med_fk1, tag -> med_fk2).\n	previous_role			role_code DEFAULT NULL,\n	changer_icon_tag		INTEGER DEFAULT NULL,\n	FOREIGN KEY (organization_id, changer_icon_tag) REFERENCES orga_icon ON DELETE NO ACTION  \n);\n\n-- CREATE TABLE orga_role (\n-- 	change_event_id		BIGINT PRIMARY KEY,\n-- 	next_change			BIGINT REFERENCES orga_role ON DELETE CASCADE,\n\n-- 	organization_id		INTEGER NOT NULL REFERENCES orga_organization ON DELETE CASCADE,\n-- 	icon_tag 			INTEGER NOT NULL,\n-- 	FOREIGN KEY (organization_id, tag)\n-- );\n\n/** Represents a join request. An account can have at most one active join request. With active I mean: not canceled. */\nCREATE TABLE orga_join_request (\n	user_id				UUID NOT NULL,\n	account_tag			SMALLINT NOT NULL,\n	FOREIGN KEY (user_id, account_tag) REFERENCES orga_account  ON DELETE CASCADE,\n	request_event_id	BIGINT PRIMARY KEY, -- REFERENCES orga_event\n	UNIQUE (user_id, account_tag, cancel_event_id),\n	organization_id		INTEGER NOT NULL  REFERENCES orga_organization  ON DELETE CASCADE,\n\n\n	/* this is another entity that is embedded here for efficiency  */\n	cancel_event_id		BIGINT DEFAULT NULL, -- REFERENCES orga_event, id of the \"cancel join request\" event.  For efficiency sake, when this column is updated, and indexed key of this table should be copied to the referenced orga_event row (user_id -> user_id, account_tag -> med_fk1).\n	because_accepted	BOOLEAN DEFAULT NULL, -- tells if the request was canceled because the account was accepted or the account canceled the join request\n\n	/* this is another entity that is embedded here for efficiency  */\n	rejection_msg		TEXT DEFAULT NULL, -- the message that the rejecter has written when he rejected the join request\n	rejection_event_id	BIGINT DEFAULT NULL, -- REFERENCES orga_event -- id of the rejection event. For efficiency sake, when this column is updated, and indexed key of this table should be copied to the referenced orga_event row (user_id -> user_id, account_tag -> med_fk1).\n	rejecter_icon_tag	INTEGER DEFAULT NULL, -- tag of the member icon that rejected the join request\n	FOREIGN KEY (organization_id, rejecter_icon_tag) REFERENCES orga_icon ON DELETE CASCADE \n);\n\n/** One to one relationship between an account and its current member icon. */\nCREATE TABLE orga_membership (\n	organization_id		INTEGER NOT NULL,\n	icon_tag			INTEGER NOT NULL,\n	FOREIGN KEY (organization_id, icon_tag) REFERENCES orga_icon  ON DELETE CASCADE,\n	UNIQUE (organization_id, icon_tag, abandon_event_id),\n\n	user_id				UUID NOT NULL,\n	account_tag			SMALLINT NOT NULL,\n	FOREIGN KEY (user_id, account_tag) REFERENCES orga_account  ON DELETE CASCADE,\n	UNIQUE (user_id, account_tag, abandon_event_id),\n	\n\n	request_event_id	BIGINT NOT NULL, -- REFERENCES orga_event	-- id of the join request that was accepted\n	accepted_event_id	BIGINT PRIMARY KEY, -- REFERENCES orga_event	-- id of this join request acceptance event\n	accepter_icon_tag 	INTEGER NOT NULL,	-- tag of the member icon that accepted the join request\n	FOREIGN KEY (organization_id, accepter_icon_tag) REFERENCES orga_icon ON DELETE CASCADE, \n\n	/* this is another entity that is embedded here for efficiency  */\n	abandon_event_id	BIGINT -- REFERENCES orga_event	-- id of the \"abandon organization\" event.  For efficiency sake, when this column is updated, and indexed key of this table should be copied to the referenced orga_event row (user_id -> user_id, account_tag -> med_fk1).\n);\n\n\n# --- !Downs\n\nDROP TABLE IF EXISTS orga_membership;\nDROP TABLE IF EXISTS orga_join_request;\nDROP TABLE IF EXISTS orga_icon;\nDROP TABLE IF EXISTS orga_organization;\nDROP TABLE IF EXISTS orga_event;\nDROP TABLE IF EXISTS orga_account;\nDROP TYPE IF EXISTS role_code;\n\n\n",
 			"file": "/F/Projects/activator/coc-war-organizer/conf/evolutions/default/2.sql",
+			"file_size": 5683,
+			"file_write_time": 130787981913084000,
 			"settings":
 			{
-				"buffer_size": 5562,
+				"buffer_size": 5763,
 				"line_ending": "Windows"
 			}
 		},
 		{
+			"contents": "#Evolutions\n\n# --- !Ups\n\n\nCREATE TABLE war_event (\n	id 							BIGSERIAL PRIMARY KEY,\n	instant						TIMESTAMP,\n	foreign_key					BIGINT\n);\n\nCREATE TABLE war_clash (\n	clash_start_event_id 		BIGINT PRIMARY KEY, -- clash_id -- REFERENCES war_event\n	battle_start_event_id		BIGINT DEFAULT NULL, -- REFERENCES war_event\n	clash_end_event_id			BIGINT DEFAULT NULL, -- REFERENCES war_event -- this event id coincides with the clash_start_event_id of the immediate following clash\n\n	clash_start_orga_event_id 	BIGINT NOT NULL -- REFERENCES orga_event\n	organization_id				INTEGER NOT NULL REFERENCES orga_organization  ON DELETE CASCADE,\n	enemy_clan_name				TEXT,\n	enemy_clan_tag				TEXT,\n	UNIQUE(organization_id, clash_end_event_id)\n);\n\n\nCREATE TABLE war_participant (\n	add_event_id				BIGINT PRIMARY KEY, -- participant_id  -- REFERENCES war_event\n	remove_event_id				BIGINT DEFAULT NULL, -- REFERENCES war_event\n\n	clash_id		 			BIGINT NOT NULL REFERENCES war_clash ON DELETE CASCADE,\n	member_tag					INTEGER NOT NULL,\n	base_position				SMALLINT,\n	UNIQUE(clash_id, base_position, remove_event_id)\n);\n\nCREATE TABLE war_reservation (\n	add_event_id				BIGINT PRIMARY KEY, -- war_reservation_id -- REFERENCES war_event\n	remove_event_id				BIGINT DEFAULT NULL, -- REFERENCES war_event\n\n	participant_id		 		INTEGER NOT NULL REFERENCES war_participant ON DELETE CASCADE,\n	target_position 			SMALLINT NOT NULL,\n	UNIQUE(participant_id, target_position, remove_event_id)\n);\n\nCREATE TABLE war_guess (\n	add_event_id				BIGINT PRIMARY KEY, -- war_guess_id -- REFERENCES war_event\n	remove_event_id				BIGINT DEFAULT NULL, -- REFERENCES war_event\n\n	clash_id					BIGINT NOT NULL REFERENCES war_clash ON DELETE CASCADE,\n	guesser_member_tag			INTEGER NOT NULL,\n	judged_participant_id		BIGINT NOT NULL REFERENCES war_participant ON DELETE CASCADE,\n	target_position				SMALLINT NOT NULL,\n	one_star_forecast			SMALLINT NOT NULL, -- guesstimate of one star\n	two_stars_forecast			SMALLINT NOT NULL, -- guesstimate of two stars\n	three_stars_forecast		SMALLINT NOT NULL, -- guesstimate of thres stars\n	UNIQUE(clash_id, guesser_member_tag, judged_participant_id, target_position, remove_event_id)\n);\n\nCREATE TABLE war_fight (\n	add_event_id				BIGINT PRIMARY KEY, -- war_fight_id -- REFERENCES war_event\n	remove_event_id				BIGINT DEFAULT NULL, -- REFERENCES war_event\n\n	clash_id					BIGINT NOT NULL REFERENCES war_clash ON DELETE CASCADE,\n	participant_id 				BIGINT NOT NULL REFERENCES war_participant ON DELETE CASCADE,\n	opponent_position 			SMALLINT NOT NULL,\n	kind						BOOLEAN NOT NULL, -- true - > attack , false - > defense\n	suwe						INTEGER NOT NULL, -- seconds until war end.\n	stars 						SMALLINT NOT NULL, -- number of achieved stars\n	destruction 				SMALLINT NOT NULL, -- % of destruction\n	UNIQUE(clash_id, participant_id, opponent_position, kind, remove_event_id)\n);\n\nCREATE TABLE war_plan (\n	add_event_id				BIGINT PRIMARY KEY, -- war_plan_id -- REFERENCES war_event\n	remove_event_id				BIGINT DEFAULT NULL, -- REFERENCES war_event\n\n	clash_id					BIGINT NOT NULL REFERENCES war_clash ON DELETE CASCADE,\n	participant_id 				BIGINT NOT NULL REFERENCES war_participant ON DELETE CASCADE,\n	target_position				SMALLINT,\n	attack_number				SMALLINT,\n	UNIQUE(clash_id, participant_id, target_position, remove_event_id)\n);\n\nCREATE TABLE war_queue (\n	add_event_id				BIGINT PRIMARY KEY, -- war_queue_id -- REFERENCES war_event\n	remove_event_id				BIGINT DEFAULT NULL, -- REFERENCES war_event\n\n	clash_id					BIGINT REFERENCES war_clash ON DELETE CASCADE,\n	target_position				SMALLINT,\n	scheddule					INTEGER[], -- each item indicates the time (in seconds until war end) after which the member whose position is equal to the index is allowed to attack. \n\n	UNIQUE(clash_id, target_position, remove_event_id)\n);\n\n\n# --- !Downs\n\nDROP TABLE IF EXISTS war_queue;\nDROP TABLE IF EXISTS war_plan;\nDROP TABLE IF EXISTS war_fight;\nDROP TABLE IF EXISTS war_guess;\nDROP TABLE IF EXISTS war_reservation;\nDROP TABLE IF EXISTS war_participant;\nDROP TABLE IF EXISTS war_clash;\nDROP TABLE IF EXISTS war_event;\n\n\n",
 			"file": "conf/evolutions/default/3.sql",
+			"file_size": 4096,
+			"file_write_time": 130792451747972194,
 			"settings":
 			{
-				"buffer_size": 3902,
+				"buffer_size": 4060,
 				"line_ending": "Windows"
-			}
-		},
-		{
-			"file": "/F/Projects/activator/coc-war-organizer/app/.gitignore",
-			"settings":
-			{
-				"buffer_size": 13,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "/F/Projects/activator/coc-war-organizer/misc/.gitignore",
-			"settings":
-			{
-				"buffer_size": 34,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "/F/Projects/activator/smn-nudo/conf/evolutions/default/1.sql",
-			"settings":
-			{
-				"buffer_size": 505,
-				"line_ending": "Unix"
 			}
 		}
 	],
@@ -135,17 +121,25 @@
 	"build_varint": "",
 	"command_palette":
 	{
-		"height": 392.0,
-		"last_filter": "package",
+		"height": 150.0,
+		"last_filter": "",
 		"selected_items":
 		[
 			[
-				"package",
-				"Preferences: Browse Packages"
-			],
-			[
 				"install",
 				"Package Control: Install Package"
+			],
+			[
+				"insta",
+				"Package Control: Install Package"
+			],
+			[
+				"form",
+				"Format: Javascript"
+			],
+			[
+				"package",
+				"Preferences: Browse Packages"
 			],
 			[
 				"Package Control: ",
@@ -185,15 +179,24 @@
 	},
 	"expanded_folders":
 	[
-		"/C/Projects/activator/coc-war-organizer/conf",
+		"/C/Projects/activator/coc-war-organizer/app",
+		"/C/Projects/activator/coc-war-organizer/app/ngDirectives",
 		"/C/Projects/activator/coc-war-organizer/conf/evolutions",
-		"/C/Projects/activator/coc-war-organizer/conf/evolutions/default",
 		"/C/Projects/activator/coc-war-organizer/misc",
 		"/C/Projects/activator/coc-war-organizer/project",
 		"/C/Projects/activator/coc-war-organizer"
 	],
 	"file_history":
 	[
+		"/C/Users/Gustavo/AppData/Roaming/Sublime Text 3/Packages/User/JsFormat.sublime-settings",
+		"/C/Users/Gustavo/AppData/Roaming/Sublime Text 3/Packages/JsFormat/JsFormat.sublime-settings",
+		"/C/Projects/activator/coc-war-organizer/app/ngDirectives/reaDrag.js",
+		"/F/Develop/ScalaIde400/eclipse.ini",
+		"/C/Users/Gustavo/AppData/Roaming/Sublime Text 3/Packages/JSHint Gutter/JSHint.sublime-settings",
+		"/C/Users/Gustavo/AppData/Roaming/Sublime Text 3/Packages/JSHint Gutter/.jshintrc",
+		"/F/Projects/activator/smn-nudo/conf/evolutions/default/1.sql",
+		"/F/Projects/activator/coc-war-organizer/misc/.gitignore",
+		"/F/Projects/activator/coc-war-organizer/app/.gitignore",
 		"/C/Program Files/PostgreSQL/9.4/data/pg_log/postgresql-2015-06-14_000000.log",
 		"/C/Projects/activator/coc-war-organizer/conf/evolutions/default/3.sql",
 		"/C/Projects/activator/coc-war-organizer/project.sublime-project",
@@ -254,7 +257,7 @@
 	],
 	"find":
 	{
-		"height": 34.0
+		"height": 36.0
 	},
 	"find_in_files":
 	{
@@ -268,6 +271,8 @@
 		"case_sensitive": true,
 		"find_history":
 		[
+			"preparation_start_event_id",
+			"war_end_event_id",
 			"cancel_reason",
 			"fk_2",
 			"fk_1",
@@ -324,7 +329,7 @@
 	"groups":
 	[
 		{
-			"selected": 4,
+			"selected": 2,
 			"sheets":
 			[
 				{
@@ -349,11 +354,11 @@
 							"syntax": "Packages/SQL/SQL.tmLanguage",
 							"translate_tabs_to_spaces": false
 						},
-						"translation.x": -0.0,
-						"translation.y": 108.0,
+						"translation.x": 0.0,
+						"translation.y": 120.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 5,
+					"stack_index": 2,
 					"type": "text"
 				},
 				{
@@ -362,78 +367,21 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 5562,
+						"buffer_size": 5763,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								492,
-								492
+								370,
+								379
 							]
 						],
 						"settings":
 						{
 							"syntax": "Packages/SQL/SQL.tmLanguage",
 							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 8.0,
-						"translation.y": 54.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 3,
-					"type": "text"
-				},
-				{
-					"buffer": 2,
-					"file": "conf/evolutions/default/3.sql",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 3902,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								205,
-								205
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/SQL/SQL.tmLanguage",
-							"translate_tabs_to_spaces": false
-						},
-						"translation.x": -0.0,
-						"translation.y": 324.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 2,
-					"type": "text"
-				},
-				{
-					"buffer": 3,
-					"file": "/F/Projects/activator/coc-war-organizer/app/.gitignore",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 13,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								0,
-								0
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/Text/Plain text.tmLanguage"
 						},
 						"translation.x": 0.0,
 						"translation.y": 0.0,
@@ -443,48 +391,20 @@
 					"type": "text"
 				},
 				{
-					"buffer": 4,
-					"file": "/F/Projects/activator/coc-war-organizer/misc/.gitignore",
+					"buffer": 2,
+					"file": "conf/evolutions/default/3.sql",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 34,
+						"buffer_size": 4060,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								0,
-								0
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/Text/Plain text.tmLanguage"
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 0,
-					"type": "text"
-				},
-				{
-					"buffer": 5,
-					"file": "/F/Projects/activator/smn-nudo/conf/evolutions/default/1.sql",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 505,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								460,
-								460
+								517,
+								517
 							]
 						],
 						"settings":
@@ -496,7 +416,7 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 4,
+					"stack_index": 0,
 					"type": "text"
 				}
 			]
@@ -504,7 +424,7 @@
 	],
 	"incremental_find":
 	{
-		"height": 26.0
+		"height": 28.0
 	},
 	"input":
 	{
@@ -553,7 +473,7 @@
 	"project": "project.sublime-project",
 	"replace":
 	{
-		"height": 62.0
+		"height": 52.0
 	},
 	"save_all_on_build": true,
 	"select_file":

@@ -25,13 +25,17 @@ app.controller('joinRequestCtrl', [ 'joinRequestSrv', '$scope', 'alertSrv', 'log
 	$scope.event.updateHandler = function(incitingEvent) {
 		if(incitingEvent.type === 'joinCancel') {
 			jrc.hasBeenCanceled = true;
-		} else {
+			jrc.isWaiting = false;
+		} else if(incitingEvent.type === 'joinResponse'){
 			jrc.responderMemberName = incitingEvent.responderMemberName;
 			jrc.rejectionMsg = incitingEvent.rejectionMsg;
-			jrc.hasBeenAccepted = jrc.requesterMemberName !== undefined;
-			jrc.hasBeenRejected = jrc.requesterMemberName === undefined;
+			jrc.hasBeenAccepted = incitingEvent.requesterMemberName !== undefined;
+			jrc.hasBeenRejected = incitingEvent.requesterMemberName === undefined;
+			jrc.isWaiting = false;
+		} else {
+			throw 'Invalid inciting event:' + incitingEvent.toString();
 		}
-		jrc.isWaiting = false;
+			
 	};
 	
 	logSrv.updateMe($scope.event.id, $scope.event.updateHandler);

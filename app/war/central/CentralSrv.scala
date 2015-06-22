@@ -18,25 +18,31 @@ import settings.account.Account
 import utils.TransacMode
 import utils.Transition
 import utils.TransacTransitionExec
+import play.api.libs.json.Json
+import play.api.libs.json.JsValue
+import play.api.libs.json.Writes
 
 /**
  * @author Gustavo
  */
 
-trait Command {
-	val actor: Account.Tag
-}
+
 
 object WarEvent {
 	type Id = Long
-	type Instant = java.time.Instant
+	type Instant = Long
+	implicit def jsonWrites: Writes[WarEvent] = Writes[WarEvent] ( _.toJson )
 }
 trait WarEvent {
 	val id: WarEvent.Id
 	val instant: WarEvent.Instant
-	val actorIconName: String  
+	val actorIconName: String
+	def toJson: JsValue
 }
 case class WarEventInfo(id: WarEvent.Id, instant: WarEvent.Instant, actorIconName: String)
+object WarEventInfo {
+	implicit val jsonWrites = Json.writes[WarEventInfo]
+}
 abstract class WarEventBase(wei: WarEventInfo) extends WarEvent {
 	val id = wei.id
 	val instant = wei.instant
@@ -44,13 +50,20 @@ abstract class WarEventBase(wei: WarEventInfo) extends WarEvent {
 }
 
 
-
-///////////////////////////
-
 trait CentralSrv {
 
-	def getWarState()
+  def getWarStatus(accountId: Account.Id, cmd: GetWarStatusCmd): TiTac[GetWarStatusDto]
+  
 	def startPreparation(accountId: Account.Id, cmd: StartPreparationCmd): TiTac[StartPreparationEvent]
+	def addParticipant(accountId: Account.Id, cmd: AddParticipantCmd): TiTac[AddParticipantEvent]
+	def startBattle(accountId: Account.Id, cmd: StartBattleCmd): TiTac[StartBattleEvent]
+	def addGuess(accountId: Account.Id, cmd: AddGuessCmd): TiTac[AddGuessEvent]
+	def getSchedule(accountId: Account.Id, cmd: GetScheduleCmd): TiTac[ScheduleDto]
+	def addAttack(accountId: Account.Id, cmd: AddAttackCmd): TiTac[AddAttackEvent]
+	def addDefense(accountId: Account.Id, cmd: AddDefenseCmd): TiTac[AddDefenseEvent]
+	def endWar(accountId: Account.Id, cmd: EndWarCmd): TiTac[EndWarEvent]
+	
+	def undo(accountId: Account.Id, cmd: UndoCmd): TiTac[UndoEvent]
 
 }
 

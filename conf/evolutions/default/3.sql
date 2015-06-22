@@ -10,14 +10,14 @@ CREATE TABLE war_event (
 );
 
 CREATE TABLE war_clash (
-	preparation_start_event_id 	BIGINT PRIMARY KEY, -- clash_id -- REFERENCES war_event
+	clash_start_event_id 		BIGINT PRIMARY KEY, -- clash_id -- REFERENCES war_event
 	battle_start_event_id		BIGINT DEFAULT NULL, -- REFERENCES war_event
-	war_end_event_id			BIGINT DEFAULT NULL, -- REFERENCES war_event
+	clash_end_event_id			BIGINT DEFAULT NULL, -- REFERENCES war_event -- this event id coincides with the clash_start_event_id of the immediate following clash
 
 	organization_id				INTEGER NOT NULL REFERENCES orga_organization  ON DELETE CASCADE,
 	enemy_clan_name				TEXT,
 	enemy_clan_tag				TEXT,
-	UNIQUE(organization_id, war_end_event_id)
+	UNIQUE(organization_id, clash_end_event_id)
 );
 
 

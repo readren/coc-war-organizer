@@ -16,7 +16,7 @@ import utils.Transition
 import utils.TransacMode
 import settings.account.AccountDaoImpl
 import settings.account.Account
-import log.Event
+import log.OrgaEvent
 import settings.membership.RoleChangeEventDto
 import log.LogDao
 import javax.inject.Inject
@@ -51,7 +51,7 @@ where m.organization_id = $organizationId AND m.holder_user_id = ${holderId.user
 		sql.as(IconDaoImpl.iconDtoParser.singleOpt)
 	})
 
-	override def insertRoleChangeEvent(roleChangeEventId: Event.Id, organizationId: Organization.Id, affectedIconTag: Icon.Tag, newRole: Role, previousRole: Role, changerIconTag: Icon.Tag): Transition[TransacMode, Unit] =
+	override def insertRoleChangeEvent(roleChangeEventId: OrgaEvent.Id, organizationId: Organization.Id, affectedIconTag: Icon.Tag, newRole: Role, previousRole: Role, changerIconTag: Icon.Tag): Transition[TransacMode, Unit] =
 		tte.inTransaction {
 			JdbcTransacMode.inConnection(implicit connection => {
 				val sql = SQL"""
@@ -63,15 +63,21 @@ where organization_id = $organizationId AND tag = $affectedIconTag"""
 			})
 		}
 
-	def getRoleChangeEventsAfter(oEventId: Option[Event.Id], organizationId: Organization.Id): Transition[TransacMode, Seq[RoleChangeEventDto]] =
+	def getRoleChangeEventsAfter(threshold: Either[OrgaEvent.Instant, Int], organizationId: Organization.Id): Transition[TransacMode, Seq[RoleChangeEventDto]] =
 		JdbcTransacMode.inConnection(implicit connection => {
-			val eventId = oEventId.getOrElse(0L)
-			val sql = SQL"""
+			val sql = """
 select e.id, e.instant, i.tag, i.present_role, i.previous_role, i.changer_icon_tag
 from orga_event e
 inner join orga_icon i on (i.organization_id = e.med_fk1 AND i.tag = e.med_fk2 AND i.role_change_event_id = e.id)
-where e.id > $eventId AND i.organization_id = $organizationId AND i.changer_icon_tag != i.tag"""
-			sql.as(IconDaoImpl.roleChangeEventDtoParser.*)
+where i.organization_id = {organizationId} AND i.changer_icon_tag != i.tag AND """
+
+			val query = threshold match {
+				case Left(edge) =>
+					SQL(sql + "e.instant >= {edge}").on("edge" -> edge)
+				case Right(secondsBefore) =>
+					SQL(sql + "e.instant >= localtimestamp - make_interval(secs:={secondsBefore})").on("secondsBefore" -> secondsBefore)
+			}
+			query.on("organizationId" -> organizationId).as(IconDaoImpl.roleChangeEventDtoParser.*)
 		})
 
 }
@@ -84,7 +90,7 @@ object IconDaoImpl {
 	}
 
 	val roleChangeEventDtoParser: RowParser[RoleChangeEventDto] =
-		get[Event.Id](1) ~ get[Event.Instant](2) ~ get[Icon.Tag](3) ~ get[Role.Code](4) ~ get[Role.Code](5) ~ get[Icon.Tag](6) map {
+		get[OrgaEvent.Id](1) ~ get[OrgaEvent.Instant](2) ~ get[Icon.Tag](3) ~ get[Role.Code](4) ~ get[Role.Code](5) ~ get[Icon.Tag](6) map {
 			case id ~ instant ~ affectedIconTag ~ newRole ~ previousRole ~ changerIconTag =>
 				RoleChangeEventDto(id, instant, affectedIconTag, Role.decode(newRole), Role.decode(previousRole), changerIconTag)
 		}

@@ -13,27 +13,33 @@ import settings.account.Account
 
 @ImplementedBy(classOf[LogDaoImpl])
 trait LogDao {
-	def insert(): Transition[TransacMode, (Event.Id, Event.Instant)]
+	def insert(): Transition[TransacMode, (OrgaEvent.Id, OrgaEvent.Instant)]
 }
 
 /**
  * @author Gustavo
  *
  */
+object LogSrvImpl {
+	val TIME_SHIFT_MARGIN = 5
+}
 class LogSrvImpl @Inject() (membershipSrv: MembershipSrv, logDao: LogDao, transacTransitionExec: TransacTransitionExec, eventsSourcesKnower: EventsSourcesKnower) extends LogSrv {
 
-	override def getEventsAfter(userId: User.Id, getEventsAfterCmd: GetEventsAfterCmd): Transition[TransacMode, Seq[Event]] = transacTransitionExec.inTransaction {
-		val accountId = Account.Id(userId, getEventsAfterCmd.accountTag)
+	override def getEventsAfter(accountId:Account.Id, getEventsAfterCmd: GetEventsAfterCmd): Transition[TransacMode, Seq[OrgaEvent]] = transacTransitionExec.inTransaction {
 		membershipSrv.getOrganizationOf(accountId).flatMap {
 			case None => Transition.unit(Seq())
 			case Some(organizationId) =>
 				val seqTrans = for (eventsSource <- eventsSourcesKnower.eventsSources) yield {
-					for (event <- eventsSource.getEventsAfter(getEventsAfterCmd.eventId, organizationId)) yield event
+					val threshold: Either[OrgaEvent.Instant, Int] = getEventsAfterCmd.eventInstant match {
+						case Some(eventInstant) => Left(eventInstant.minusSeconds(LogSrvImpl.TIME_SHIFT_MARGIN))
+						case None => Right(300*60) // 300 minutes in seconds
+					}
+					for (event <- eventsSource.getEventsAfter(threshold, organizationId)) yield event
 				}
 				Transition.sequence(seqTrans.toList).map { _.reduce(_ ++ _) }
 		}
 	}
 
-	override def newEvent(): Transition[TransacMode, (Event.Id, Event.Instant)] = return logDao.insert()
+	override def newEvent(): Transition[TransacMode, (OrgaEvent.Id, OrgaEvent.Instant)] = return logDao.insert()
 
 }
