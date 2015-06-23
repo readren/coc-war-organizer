@@ -22,6 +22,7 @@ POST   /membership/cancelJoinRequest                   @settings.membership.Memb
 POST   /membership/leaveOrganization                   @settings.membership.MembershipCtrl.leaveOrganization
 POST   /membership/createOrganization                  @settings.membership.MembershipCtrl.createOrganization
 
+POST   /log/getLogInitState                            @log.LogCtrl.getLogInitState
 POST   /log/getEventsAfter                             @log.LogCtrl.getEventsAfter
 POST   /log/joinRequest/accept                         @log.events.joinRequest.JoinRequestCtrl.accept
 POST   /log/joinRequest/reject                         @log.events.joinRequest.JoinRequestCtrl.reject

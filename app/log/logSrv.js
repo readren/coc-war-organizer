@@ -1,10 +1,11 @@
 'use strict';
 /*global app: false */
 
-app.factory('logSrv', [ '$http', '$auth', '$timeout', '$rootScope', 'accountSrv', function($http, $auth, $timeout, $rootScope, accountSrv) {
+app.factory('logSrv', [ '$http', '$auth', '$timeout', '$rootScope', 'accountSrv', 'utilsSrv', function($http, $auth, $timeout, $rootScope, accountSrv) {
 	var eventsCache = {};
+	var membersCache = {};
 	var lastQueryToken = 0;
-
+	
 	/**updates the cache if a different token is detected
 	 * @return true if a different token was detected*/
 	var updateCache = function() {
@@ -15,51 +16,99 @@ app.factory('logSrv', [ '$http', '$auth', '$timeout', '$rootScope', 'accountSrv'
 		}
 	};
 	
-	return {
-		getLastEventInstant: function() {
-			updateCache();
-			var events = eventsCache[accountSrv.getCurrentAccount().tag] || [];
-			return events.length === 0 ? null : events[0].instant;
-		},
-		
-		getMembers: function() {
-			
-		},
-
-		getEvents: function() {
-			var srv = this;
-			return accountSrv.getCurrentAccountPromise().then(
-				function(currentAccount) {
-					if(currentAccount) {
-						return $http.post('/log/getEventsAfter', {eventInstant: srv.getLastEventInstant(), actor: currentAccount.tag}).then(
-							function(valueE) {
-								// get the cached events corresponding to the current account
+	var getLastEventInstant = function() {
+		updateCache();
+		var events = eventsCache[accountSrv.getCurrentAccount().tag] || [];
+		return events.length === 0 ? null : events[0].instant;
+	};
+	
+	var handleTeamChanges = function(members, event) {
+		if(event.type === 'joinResponse' && event.requesterIconDto) {
+			members.push(event.requesterIconDto);
+		} else if(event.type === 'abandon') {
+			members.splice(utilsSrv.find(members, function(m) {
+				return m.tag === event.iconDto.tag;  
+			}), 1);
+		} else if(event.type === 'roleChange') {
+			var affectedMember = utilsSrv.find(members, function(m){
+				return m.tag === event.affectedIconTag;
+			});
+			if(affectedMember)
+				affectedMember.role = event.newRole;
+		}
+		return members;
+	};
+	
+	var eventsSortCriteria = function(a, b) {
+		return b.id - a.id;
+	};
+	
+	var getEventsAndMembers = function() {
+		var srv = this;
+		return accountSrv.getCurrentAccountPromise().then(
+			function(currentAccount) {
+				if(currentAccount) {
+					var lastEventInstant = getLastEventInstant();
+					if(lastEventInstant) {
+						return $http.post('/log/getEventsAfter', {eventInstant: lastEventInstant, actor: currentAccount.tag}).then(
+							function(response) {
+								// Update the events cache
+								// get the cached events and members corresponding to the current account
 								var events = eventsCache[currentAccount.tag] || [];
+								var members = membersCache[currentAccount.tag] || [];
 								// the new events are the ones received in the response that are not already in the cache. So, the repeated ones are filtered out, and the remaining are sorted in order to show them in the correct order. 
-								var newEvents = valueE.data.filter(function(ne) {
-									return events.indexOf(ne) === -1;
-								}).sort(function(a, b) {
-									return b.id - a.id;
-								});
-								// Update the state of the independent machines conceived by events received in previous calls to this operation (getEvents). Note that the state of the machines corresponding to new events are not updated here because their controllers aren't instantiated at this moment. Each of them should be updated by itself, calling the updateMe function, during the controller instantiation.  
-								angular.forEach(newEvents, function(newEvent) {
-									srv.treat(newEvent);
-								});
+								var newEvents = response.data.filter(function(ne) {
+									return utilsSrv.find(events, function(oe) {
+										return ne.id === oe.id; 
+									}) === null;
+								}).sort(eventsSortCriteria); // NOTE that the sorting is scoped to the events that arrive in the same response. This avoids an event from an older response be before an event from a newer response, even if event from the older response is newer. 
+								
+								// for each new event, from oldest to newest
+								for( var i = newEvents.length; --i >= 0;) {
+									// Update the state of the independent machines conceived by events received in previous calls to this operation (getEvents). Note that the state of the machines corresponding to new events are not updated here because their controllers aren't instantiated at this moment. Each of them should be updated by itself, calling the updateMe function, during the controller instantiation.
+									srv.treat(newEvents[i]);
+									
+									// Update the members cache
+									handleTeamChanges(members, newEvents[i]);
+								}
+								
 								// add the new events to the cache
 								events = newEvents.concat(events);
 								eventsCache[currentAccount.tag] = events;
-								// give all the events, new and cached
-								return events;
+								// give all the events and members
+								return { currentAccount: currentAccount, events: events, members: members };
 							},
 							function(reason) {
 								throw reason.data;
 							}
 						);
 					} else {
-						return [];
+						return $http.post('/log/getLogInitState', {actor: currentAccount.tag}).then(
+							function(response) {
+								var events = eventsCache[currentAccount.tag] = response.data.events.sort(eventsSortCriteria);
+								var members = membersCache[currentAccount.tag] = response.data.members;
+								return { currentAccount: currentAccount, events: events, members: members };
+							},
+							function(reason) {
+								throw reason.data;
+							}
+						);
 					}
+				} else {
+					return null;
 				}
-			);
+			}
+		);
+	};
+
+	
+	return {
+		getMembers: function() {
+			return getEventsAndMembers().then(function(eam) { return eam.members; });
+		},
+
+		getEvents: function() {
+			return getEventsAndMembers().then(function(eam) { return eam.events; });
 		},
 		
 		/* Updates the state of the independent machines affected by the inciting event. Given the server has no direct reference to the independent machines, it refers to them trough the ids of the events who conceived them (the affectedEvents). */  

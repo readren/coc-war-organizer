@@ -1,29 +1,34 @@
 
 package settings.membership
 
-import javax.inject.Inject
+import scala.annotation.implicitNotFound
+
 import com.mohiva.play.silhouette.api.Environment
 import com.mohiva.play.silhouette.api.Silhouette
 import com.mohiva.play.silhouette.impl.authenticators.JWTAuthenticator
-import auth.models.User
-import utils.TransacTransitionExec
-import scala.concurrent.Future
-import play.api.libs.json.JsSuccess
-import play.api.libs.json.Json
-import scala.concurrent.ExecutionContext
-import utils.Transition
-import utils.TransacMode
-import utils.executionContexts._
-import play.api.libs.json.JsError
-import settings.account.AccountSrv
-import settings.account.Account
-import common.AlreadyExistException
-import settings.account.Account
-import log.OrgaEvent
-import common.TypicalActions
-import common.Command
 
-case class IconDto(tag: Icon.Tag, name: String, organizationId: Organization.Id, role: Role)
+import auth.models.User
+import common.AlreadyExistException
+import common.Command
+import common.TypicalActions
+import javax.inject.Inject
+import log.OrgaEvent
+import play.api.libs.json.JsObject
+import play.api.libs.json.JsString
+import play.api.libs.json.JsValue
+import play.api.libs.json.Json
+import settings.account.Account
+import settings.account.AccountSrv
+import utils.TransacTransitionExec
+import utils.executionContexts.dbWriteOperations
+import utils.executionContexts.default
+import utils.executionContexts.simpleDbLookups
+import membershipJsonConverters._
+
+case class IconDto(tag: Icon.Tag, name: String, role: Role)
+object IconDto {
+	implicit val iconDtoWrites = Json.writes[IconDto]
+}
 
 case class CreateOrganizationCmd(accountTag: Account.Tag, accountName: String, clanName: String, clanTag: String, description: Option[String], iconName: Option[String])
 
@@ -40,20 +45,24 @@ case class SendJoinRequestCmd(accountTag: Account.Tag, organizationId: Organizat
  */
 case class MembershipStatusDto(organization: Option[Organization], iconDto: Option[IconDto], rejectionMsg: Option[String])
 
-case class MemberIconDto(tag: Icon.Tag, iconName: String)
-case class GetOrgaStatusCmd(actor: Account.Tag) extends Command
-case class GetOrgaStatusDto(members: Seq[MemberIconDto])
+case class AbandonEventDto(id: OrgaEvent.Id, instant: OrgaEvent.Instant, iconDto: IconDto) extends OrgaEvent {
+	def toJson: JsValue = abandonEventDtoWrites.writes(this)
+}
+
+case class RoleChangeEventDto(id: OrgaEvent.Id, instant: OrgaEvent.Instant, affectedIconTag: Icon.Tag, newRole: Role, previousRole: Role, changerIconTag: Icon.Tag) extends OrgaEvent {
+	def toJson: JsValue = roleChangeEventDtoWrites.writes(this)
+}
+
 
 object membershipJsonConverters {
-	implicit val iconDtoWrites = Json.writes[IconDto]
+	
 	implicit val createOrganizationCmdReads = Json.reads[CreateOrganizationCmd]
 	implicit val searchOrganizationsCmdReads = Json.reads[SearchOrganizationsCmd]
 	implicit val sendJoinRequestCmdReads = Json.reads[SendJoinRequestCmd]
 	implicit val membershipStatusDtoWrites = Json.writes[MembershipStatusDto]
-	implicit val memberIconDtoWrites = Json.writes[MemberIconDto]
-	implicit val getOrgaStatusCmdReads = Json.reads[GetOrgaStatusCmd]
-	implicit val getOrgaStatusDtoWrites = Json.writes[GetOrgaStatusDto]
-	
+
+	implicit val abandonEventDtoWrites = Json.writes[AbandonEventDto].transform { x => x.as[JsObject] + ("type" -> JsString("abandon")) }
+	implicit val roleChangeEventDtoWrites = Json.writes[RoleChangeEventDto].transform { x => x.as[JsObject] + ("type" -> JsString("roleChange")) }
 }
 
 class MembershipCtrl @Inject() (implicit val env: Environment[User, JWTAuthenticator], membershipSrv: MembershipSrv, val tte: TransacTransitionExec, accountSrv: AccountSrv)
@@ -117,8 +126,6 @@ class MembershipCtrl @Inject() (implicit val env: Environment[User, JWTAuthentic
 			case are: AlreadyExistException => Conflict(are.getMessage())
 		}
 	}
-
-	def getOrgaStatus = typicalAction(simpleDbLookups, membershipSrv.getOrgaStatus _)(getOrgaStatusCmdReads, getOrgaStatusDtoWrites)
 
 }
 

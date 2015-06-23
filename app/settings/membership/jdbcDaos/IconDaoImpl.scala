@@ -34,13 +34,20 @@ values ($organizationId, default, $name, ${role.code}::role_code, ${accountId.us
 		sql.executeInsert(get[Icon.Tag](2).single)
 	})
 
-	override def findByAccount(accountId: Account.Id): Transition[TransacMode, Option[IconDto]] = JdbcTransacMode.inConnection { implicit connection =>
+	override def findByAccount(accountId: Account.Id): Transition[TransacMode, Option[Icon]] = JdbcTransacMode.inConnection { implicit connection =>
 		val sql = SQL"""
 select icon.*
 from orga_membership ms
 inner join orga_icon icon on (icon.organization_id = ms.organization_id AND icon.tag = ms.icon_tag)
 where ms.user_id = ${accountId.userId} AND ms.account_tag = ${accountId.tag} AND ms.abandon_event_id is null"""
-		sql.as(IconDaoImpl.iconDtoParser.singleOpt)
+		val parser: RowParser[Icon] = {
+			get[Organization.Id]("organization_id") ~ IconDaoImpl.iconDtoParser ~ AccountDaoImpl.pkParser("holder_user_id", "holder_account_tag") map {
+				case organizationId ~ iconDto ~ holder =>
+					assert(holder == accountId)
+					Icon(organizationId, iconDto.tag, iconDto.name, iconDto.role, accountId)
+			}
+		}
+		sql.as(parser.singleOpt)
 	}
 
 	override def findByHolder(organizationId: Organization.Id, holderId: Account.Id): Transition[TransacMode, Option[IconDto]] = JdbcTransacMode.inConnection(implicit connection => {
@@ -84,8 +91,8 @@ where i.organization_id = {organizationId} AND i.changer_icon_tag != i.tag AND "
 
 object IconDaoImpl {
 	val iconDtoParser: RowParser[IconDto] = {
-		get[Icon.Tag]("tag") ~ str("name") ~ get[Organization.Id]("organization_id") ~ get[Char]("present_role") map {
-			case tag ~ name ~ organizationId ~ roleCode => IconDto(tag, name, organizationId, Role.decode(roleCode))
+		get[Icon.Tag]("tag") ~ str("name") ~ get[Char]("present_role") map {
+			case tag ~ name ~ roleCode => IconDto(tag, name, Role.decode(roleCode))
 		}
 	}
 

@@ -28,6 +28,7 @@ import scala.util.Failure
 import settings.account.Account
 import settings.membership.Organization
 import settings.membership.Icon
+import settings.membership.IconDto
 
 /**
  * @author Gustavo
@@ -54,7 +55,7 @@ object JoinRespondCmd {
 }
 
 /**@param affectedEvents are the ids of events that have been sent to the client previously and have conceived a independent machine (in the client) whose state should be updated when the action announced by this event is commited. */
-case class JoinResponseEventDto(id: OrgaEvent.Id, instant: OrgaEvent.Instant, affectedEvents: Seq[OrgaEvent.Id], responderMemberName:String, requesterAccountName: String, requesterMemberName: Option[String], rejectionMsg:Option[String]) extends RetroEvent {
+case class JoinResponseEventDto(id: OrgaEvent.Id, instant: OrgaEvent.Instant, affectedEvents: Seq[OrgaEvent.Id], responderIconName:String, requesterAccountName: String, requesterIconDto: Option[IconDto], rejectionMsg:Option[String]) extends RetroEvent {
 	override def toJson: JsValue = JoinResponseEventDto.jsonFormat.writes(this)
 }
 object JoinResponseEventDto {

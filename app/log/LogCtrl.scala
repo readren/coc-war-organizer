@@ -18,15 +18,25 @@ import com.google.inject.ImplementedBy
 import utils.executionContexts._
 import common.TypicalActions
 import common.Command
+import settings.membership.IconDto
+import common.typeAliases._
+import locJsonConverters._
+
 
 /**
  * @author Gustavo
  *
  */
+case class GetLogInitStateCmd(actor: Account.Tag) extends Command
+case class GetLogInitStateDto(events:Seq[OrgaEvent], members: Seq[IconDto])
 
-case class GetEventsAfterCmd(eventInstant: Option[OrgaEvent.Instant], actor: Account.Tag) extends Command
-object GetEventsAfterCmd {
-	implicit val jsonFormat = Json.reads[GetEventsAfterCmd]
+case class GetEventsAfterCmd(eventInstant: OrgaEvent.Instant, actor: Account.Tag) extends Command
+
+object locJsonConverters {
+	implicit val getLogInitStateCmdReads = Json.reads[GetLogInitStateCmd]
+	implicit val getLogInitStateDtoWrites= Json.writes[GetLogInitStateDto]
+	
+	implicit val getEventsAfterCmdReads = Json.reads[GetEventsAfterCmd]
 }
 
 trait OrgaEvent {
@@ -51,7 +61,8 @@ trait RetroEvent extends OrgaEvent {
 
 @ImplementedBy(classOf[LogSrvImpl])
 trait LogSrv {
-	def getEventsAfter(accountId:Account.Id, getEventsAfterCmd: GetEventsAfterCmd): Transition[TransacMode, Seq[OrgaEvent]]
+	def getLogInitState(accountId:Account.Id, getLogInitStateCmd: GetLogInitStateCmd): TiTac[GetLogInitStateDto]
+	def getEventsAfter(accountId:Account.Id, getEventsAfterCmd: GetEventsAfterCmd): TiTac[Seq[OrgaEvent]]
 	def newEvent(): Transition[TransacMode, (OrgaEvent.Id, OrgaEvent.Instant)]
 }
 
@@ -59,5 +70,6 @@ trait LogSrv {
 class LogCtrl @Inject() (implicit val env: Environment[User, JWTAuthenticator], val tte: TransacTransitionExec, logSrv: LogSrv)
 	extends Silhouette[User, JWTAuthenticator] with TypicalActions[JWTAuthenticator] {
 
+	def getLogInitState = typicalAction(simpleDbLookups, logSrv.getLogInitState _)(getLogInitStateCmdReads, getLogInitStateDtoWrites)
 	def getEventsAfter = typicalAction(simpleDbLookups, logSrv.getEventsAfter _)
 }

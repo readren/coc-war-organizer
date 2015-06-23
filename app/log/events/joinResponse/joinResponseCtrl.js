@@ -3,6 +3,6 @@
 
 app.controller('joinResponseCtrl', ['$scope', function($scope) {
 	var jrc = this;
-	jrc.hasBeenAccepted = $scope.event.requesterMemberName !== undefined;
-	jrc.hasBeenRejected = $scope.event.requesterMemberName === undefined;
+	jrc.hasBeenAccepted = $scope.event.requesterIconDto !== undefined;
+	jrc.hasBeenRejected = $scope.event.requesterIconDto === undefined;
 } ]);

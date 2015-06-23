@@ -27,10 +27,10 @@ app.controller('joinRequestCtrl', [ 'joinRequestSrv', '$scope', 'alertSrv', 'log
 			jrc.hasBeenCanceled = true;
 			jrc.isWaiting = false;
 		} else if(incitingEvent.type === 'joinResponse'){
-			jrc.responderMemberName = incitingEvent.responderMemberName;
+			jrc.responderIconName = incitingEvent.responderIconName;
 			jrc.rejectionMsg = incitingEvent.rejectionMsg;
-			jrc.hasBeenAccepted = incitingEvent.requesterMemberName !== undefined;
-			jrc.hasBeenRejected = incitingEvent.requesterMemberName === undefined;
+			jrc.hasBeenAccepted = incitingEvent.requesterIconDto !== undefined;
+			jrc.hasBeenRejected = incitingEvent.requesterIconDto === undefined;
 			jrc.isWaiting = false;
 		} else {
 			throw 'Invalid inciting event:' + incitingEvent.toString();

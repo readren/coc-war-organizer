@@ -3,10 +3,10 @@
 <div ng-controller="joinResponseCtrl as jrc">
 	<div ng-show="jrc.hasBeenAccepted" class="flexBaselineRow">
 		<h4 style="margin-right: 1em;">New member</h4>
-		<p><b>{{event.requesterAccountName}}</b> has been accepted as <b>{{event.requesterMemberName}}</b> by <b>{{event.responderMemberName}}</b></p>
+		<p><b>{{event.requesterAccountName}}</b> has been accepted as <b>{{event.requesterIconDto.name}}</b> by <b>{{event.responderIconName}}</b></p>
 	</div>
 	<div ng-show="jrc.hasBeenRejected" class="flexBaselineRow">
 		<h4 style="margin-right: 1em;">Rejection</h4>
-		<p><b>{{event.requesterAccountName}}</b> has been rejected by <b>{{event.responderMemberName}}</b> saying <i>{{event.rejectionMsg}}</i></p>
+		<p><b>{{event.requesterAccountName}}</b> has been rejected by <b>{{event.responderIconName}}</b> saying <i>{{event.rejectionMsg}}</i></p>
 	</div>
 </div>

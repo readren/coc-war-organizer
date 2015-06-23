@@ -23,6 +23,7 @@ import common.TypicalActions
 import common.Command
 import centralJsonConverters._
 import utils.executionContexts._
+import play.api.libs.json.Format
 
 case class GetWarStatusCmd(actor: Account.Tag) extends Command
 case class GetWarStatusDto(nonUndoneWarEventsSinceLastInit: Seq[WarEvent]) // Inits occur at preparation start
@@ -77,40 +78,40 @@ case class UndoEvent(wei: WarEventInfo, undoneEventId: WarEvent.Id) extends WarE
 
 object centralJsonConverters {
 
-	implicit val getWarStatusCmdReads = Json.reads[GetWarStatusCmd]
-	implicit val getWarStatusDtoWrites = Json.writes[GetWarStatusDto]
+	implicit val getWarStatusCmdReads:Reads[GetWarStatusCmd] = Json.reads[GetWarStatusCmd]
+	implicit val getWarStatusDtoWrites:Writes[GetWarStatusDto] = Json.writes[GetWarStatusDto]
 
-	implicit val startPreparationCmdReads = Json.reads[StartPreparationCmd]
-	implicit val startPrepatationEventWrites = Json.writes[StartPreparationEvent]
+	implicit val startPreparationCmdReads:Reads[StartPreparationCmd] = Json.reads[StartPreparationCmd]
+	implicit val startPrepatationEventWrites:Writes[StartPreparationEvent] = Json.writes[StartPreparationEvent]
 
-	implicit val addParticipantCmdReads = Json.reads[AddParticipantCmd]
-	implicit val addParticipantEventWrites = Json.writes[AddParticipantEvent]
+	implicit val addParticipantCmdReads:Reads[AddParticipantCmd] = Json.reads[AddParticipantCmd]
+	implicit val addParticipantEventWrites:Writes[AddParticipantEvent] = Json.writes[AddParticipantEvent]
 
-	implicit val startBattleCmdReads = Json.reads[StartBattleCmd]
-	implicit val startBattleEventWrites = Json.writes[StartBattleEvent]
+	implicit val startBattleCmdReads:Reads[StartBattleCmd] = Json.reads[StartBattleCmd]
+	implicit val startBattleEventWrites:Writes[StartBattleEvent] = Json.writes[StartBattleEvent]
 
-	implicit val addGuessInfoFormat = Json.format[GuessInfo]
-	implicit val addGuessCmdReads = Json.reads[AddGuessCmd]
-	implicit val addGuessEventWrites = Json.writes[AddGuessEvent]
+	implicit val addGuessInfoFormat:Format[GuessInfo] = Json.format[GuessInfo]
+	implicit val addGuessCmdReads:Reads[AddGuessCmd] = Json.reads[AddGuessCmd]
+	implicit val addGuessEventWrites:Writes[AddGuessEvent] = Json.writes[AddGuessEvent]
 
-	implicit val queueItemWrites = Json.writes[QueueItem]
-	implicit val getScheduleCmdReads = Json.reads[GetScheduleCmd]
-	implicit val scheduleDtoWrites = Json.writes[ScheduleDto]
+	implicit val queueItemWrites:Writes[QueueItem] = Json.writes[QueueItem]
+	implicit val getScheduleCmdReads:Reads[GetScheduleCmd] = Json.reads[GetScheduleCmd]
+	implicit val scheduleDtoWrites:Writes[ScheduleDto] = Json.writes[ScheduleDto]
 
-	implicit val fightInfoFormat = Json.format[FightInfo]
-	implicit val defenseInfoFormat = Json.format[DefenseInfo]
-	implicit val addDefenseCmdReads = Json.reads[AddDefenseCmd]
-	implicit val addDefenseEventWrites = Json.writes[AddDefenseEvent]
+	implicit val fightInfoFormat:Format[FightInfo] = Json.format[FightInfo]
+	implicit val defenseInfoFormat:Format[DefenseInfo] = Json.format[DefenseInfo]
+	implicit val addDefenseCmdReads:Reads[AddDefenseCmd] = Json.reads[AddDefenseCmd]
+	implicit val addDefenseEventWrites:Writes[AddDefenseEvent] = Json.writes[AddDefenseEvent]
 
-	implicit val attackInfoFormat = Json.format[AttackInfo]
-	implicit val addAttackCmdReads = Json.reads[AddAttackCmd]
-	implicit val addAttackEventWrites = Json.writes[AddAttackEvent]
+	implicit val attackInfoFormat:Format[AttackInfo] = Json.format[AttackInfo]
+	implicit val addAttackCmdReads:Reads[AddAttackCmd] = Json.reads[AddAttackCmd]
+	implicit val addAttackEventWrites:Writes[AddAttackEvent] = Json.writes[AddAttackEvent]
 
-	implicit val endWarCmdReads = Json.reads[EndWarCmd]
-	implicit val endWarEventWrites = Json.writes[EndWarEvent]
+	implicit val endWarCmdReads:Reads[EndWarCmd] = Json.reads[EndWarCmd]
+	implicit val endWarEventWrites:Writes[EndWarEvent] = Json.writes[EndWarEvent]
 
-	implicit val undoCmdReads = Json.reads[UndoCmd]
-	implicit val undoEventWrites = Json.writes[UndoEvent]
+	implicit val undoCmdReads:Reads[UndoCmd] = Json.reads[UndoCmd]
+	implicit val undoEventWrites:Writes[UndoEvent] = Json.writes[UndoEvent]
 }
 
 /**
@@ -118,15 +119,15 @@ object centralJsonConverters {
  */
 class CentralCtrl @Inject() (centralSrv: CentralSrv, val tte: TransacTransitionExec, implicit val env: Environment[User, JWTAuthenticator]) extends Silhouette[User, JWTAuthenticator] with TypicalActions[JWTAuthenticator] {
 
-	def getWarStatus = typicalAction(simpleDbLookups, centralSrv.getWarStatus _)
-	def startPreparation = typicalAction(dbWriteOperations, centralSrv.startPreparation _)
-	def addParticipant = typicalAction(dbWriteOperations, centralSrv.addParticipant _)
-	def startBattle = typicalAction(dbWriteOperations, centralSrv.startBattle _)
-	def getSchedule = typicalAction(simpleDbLookups, centralSrv.getSchedule _)
-	def addGuess = typicalAction(dbWriteOperations, centralSrv.startBattle _)
-	def addAttack = typicalAction(dbWriteOperations, centralSrv.addAttack _)
-	def addDefense = typicalAction(dbWriteOperations, centralSrv.addDefense _)
-	def endWar = typicalAction(dbWriteOperations, centralSrv.endWar _)
-	def undo = typicalAction(dbWriteOperations, centralSrv.undo _)
+	def getWarStatus:Action[JsValue] = typicalAction(simpleDbLookups, centralSrv.getWarStatus _)
+	def startPreparation:Action[JsValue] = typicalAction(dbWriteOperations, centralSrv.startPreparation _)
+	def addParticipant:Action[JsValue] = typicalAction(dbWriteOperations, centralSrv.addParticipant _)
+	def startBattle:Action[JsValue] = typicalAction(dbWriteOperations, centralSrv.startBattle _)
+	def getSchedule:Action[JsValue] = typicalAction(simpleDbLookups, centralSrv.getSchedule _)
+	def addGuess:Action[JsValue] = typicalAction(dbWriteOperations, centralSrv.startBattle _)
+	def addAttack:Action[JsValue] = typicalAction(dbWriteOperations, centralSrv.addAttack _)
+	def addDefense:Action[JsValue] = typicalAction(dbWriteOperations, centralSrv.addDefense _)
+	def endWar:Action[JsValue] = typicalAction(dbWriteOperations, centralSrv.endWar _)
+	def undo:Action[JsValue] = typicalAction(dbWriteOperations, centralSrv.undo _)
 
 }

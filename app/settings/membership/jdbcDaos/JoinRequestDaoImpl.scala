@@ -112,8 +112,8 @@ inner join orga_account requesterAcc on (requesterAcc.user_id = jr.user_id AND r
 where jr.organization_id = {organizationId} AND """
 
 		val parser = get[OrgaEvent.Id](1) ~ get[OrgaEvent.Instant](2) ~ get[OrgaEvent.Id](3) ~ str(4) ~ str(5) ~ str(6) map {
-			case id ~ instant ~ affectedEvent ~ responderMemberName ~ requesterAccountName ~ rejectionMsg =>
-				JoinResponseEventDto(id, instant, Seq(affectedEvent), responderMemberName, requesterAccountName, None, Some(rejectionMsg))
+			case id ~ instant ~ affectedEvent ~ responderIconName ~ requesterAccountName ~ rejectionMsg =>
+				JoinResponseEventDto(id, instant, Seq(affectedEvent), responderIconName, requesterAccountName, None, Some(rejectionMsg))
 		}
 		val query = threshold match {
 			case Left(edge) =>

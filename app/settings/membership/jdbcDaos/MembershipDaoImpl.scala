@@ -19,6 +19,7 @@ import utils.Transition
 import utils.TransacMode
 import log.events.joinRequest.JoinResponseEventDto
 import settings.membership.AbandonEventDto
+import common.typeAliases._
 
 /**
  * @author Gustavo
@@ -50,13 +51,19 @@ where user_id = ${accountId.userId} AND account_tag = ${accountId.tag} AND aband
 
 	override def getJoinAcceptedEventsAfter(threshold: Either[OrgaEvent.Instant, Int], organizationId: Organization.Id): Transition[TransacMode, Seq[JoinResponseEventDto]] = {
 		val sql = """
-select ms.accepted_event_id, e.instant, ms.request_event_id, responderMem.name, requesterAcc.name, requesterMem.name
+select ms.accepted_event_id, e.instant, ms.request_event_id, responderIcon.name as resIName, requesterAcc.name as reqAName, requesterIcon.*
 from orga_membership ms
 inner join orga_account requesterAcc on (requesterAcc.user_id = ms.user_id AND requesterAcc.tag = ms.account_tag)
-inner join orga_icon requesterMem on (requesterMem.organization_id = ms.organization_id AND requesterMem.tag = ms.icon_tag)
-inner join orga_icon responderMem on (responderMem.organization_id = ms.organization_id AND responderMem.tag = ms.accepter_icon_tag)
+inner join orga_icon requesterIcon on (requesterIcon.organization_id = ms.organization_id AND requesterIcon.tag = ms.icon_tag)
+inner join orga_icon responderIcon on (responderIcon.organization_id = ms.organization_id AND responderIcon.tag = ms.accepter_icon_tag)
 inner join orga_event e on (e.id = ms.accepted_event_id)
 where ms.organization_id = {organizationId} AND """
+
+		val parser: RowParser[JoinResponseEventDto] =
+			get[OrgaEvent.Id](1) ~ get[OrgaEvent.Instant](2) ~ get[OrgaEvent.Id](3) ~ str(4) ~ str(5) ~ IconDaoImpl.iconDtoParser map {
+				case responseEventId ~ instant ~ requestEventId ~ responderIconName ~ requesterAccountName ~ requesterIconDto =>
+					JoinResponseEventDto(responseEventId, instant, Seq(requestEventId), responderIconName, requesterAccountName, Some(requesterIconDto), None)
+			}
 
 		val query = threshold match {
 			case Left(edge) =>
@@ -65,13 +72,13 @@ where ms.organization_id = {organizationId} AND """
 				SQL(sql + "e.instant >= localtimestamp - make_interval(secs:={secondsBefore})").on("secondsBefore" -> secondsBefore)
 		}
 		JdbcTransacMode.inConnection { implicit connection =>
-			query.on("organizationId" -> organizationId).as(MembershipDaoImpl.joinResponseEventDtoParser.*)
+			query.on("organizationId" -> organizationId).as(parser.*)
 		}
 	}
 
 	override def getAbandonEventsAfter(threshold: Either[OrgaEvent.Instant, Int], organizationId: Organization.Id): Transition[TransacMode, Seq[AbandonEventDto]] = {
 		val sql = """
-select ms.abandon_event_id, e.instant, i.name
+select ms.abandon_event_id, e.instant, i.*
 from orga_event e
 inner join orga_membership ms on (ms.user_id = e.user_id AND ms.account_tag = e.med_fk1 AND ms.abandon_event_id = e.id)
 inner join orga_icon i on (i.organization_id = {organizationId} AND i.tag = ms.icon_tag)
@@ -87,17 +94,23 @@ where ms.organization_id = {organizationId} AND """
 			query.on("organizationId" -> organizationId).as(MembershipDaoImpl.abandonEventDtoParser.*)
 		}
 	}
+
+	override def getBodyOfMembers(organizationId: Organization.Id): TiTac[Seq[IconDto]] = {
+		val sql = SQL"""
+select i.tag, i.name, i.present_role
+from orga_membership ms
+inner join orga_icon i on (i.tag = ms.icon_tag)
+where ms.organization_Id = $organizationId and abandon_event_id is null"""
+		JdbcTransacMode.inConnection { implicit connection =>
+			sql.as(IconDaoImpl.iconDtoParser.*)
+		}
+	}
 }
 
 object MembershipDaoImpl {
-	val joinResponseEventDtoParser: RowParser[JoinResponseEventDto] =
-		get[OrgaEvent.Id](1) ~ get[OrgaEvent.Instant](2) ~ get[OrgaEvent.Id](3) ~ str(4) ~ str(5) ~ str(6) map {
-			case responseEventId ~ instant ~ requestEventId ~ responderMemberName ~ requesterAccountName ~ requesterMemberName =>
-				JoinResponseEventDto(responseEventId, instant, Seq(requestEventId), responderMemberName, requesterAccountName, Some(requesterMemberName), None)
-		}
 
 	val abandonEventDtoParser: RowParser[AbandonEventDto] =
-		get[OrgaEvent.Id](1) ~ get[OrgaEvent.Instant](2) ~ str(3) map {
-			case abandonEventId ~ instant ~ memberName => AbandonEventDto(abandonEventId, instant: OrgaEvent.Instant, memberName: String)
+		get[OrgaEvent.Id](1) ~ get[OrgaEvent.Instant](2) ~ IconDaoImpl.iconDtoParser map {
+			case abandonEventId ~ instant ~ iconDto => AbandonEventDto(abandonEventId, instant, iconDto)
 		}
 }

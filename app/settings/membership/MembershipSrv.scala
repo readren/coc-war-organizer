@@ -13,8 +13,6 @@ import settings.account.Account
 import utils.TransacMode
 import utils.Transition
 import settings.account.Account
-import play.api.libs.json.JsValue
-import play.api.libs.json.JsObject
 import common.typeAliases._
 
 object Role {
@@ -66,7 +64,7 @@ object Organization {
  * Each organization member, present and past, have a single icon which represents him inside the organization. Even after having left it.
  * When an account joins back, he gets the same icon. Icons are owned by the organization, not by the account that holds it.
  */
-//case class Icon(organizationId: Organization.Id, tag: Icon.Tag, name: String, role: Role, holder: Account.Id)
+case class Icon(organizationId: Organization.Id, tag: Icon.Tag, name: String, role: Role, holder: Account.Id)
 object Icon {
 	type Tag = Int
 }
@@ -74,19 +72,6 @@ object Icon {
 /**Association between an account and an organization */
 //case class Membership(organizationId: Organization.Id, memberTag: Icon.Tag, accountId: Account.Id, requestEventId: Event.Id, responseEventId: Event.Id, accepterMemberTag: Icon.Tag)
 
-case class AbandonEventDto(id: OrgaEvent.Id, instant: OrgaEvent.Instant, memberName: String) extends OrgaEvent {
-	def toJson: JsValue = AbandonEventDto.jsonFormat.writes(this)
-}
-object AbandonEventDto {
-	implicit val jsonFormat = Json.writes[AbandonEventDto].transform { x => x.as[JsObject] + ("type" -> JsString("abandon")) }
-}
-
-case class RoleChangeEventDto(id: OrgaEvent.Id, instant: OrgaEvent.Instant, affectedIconTag: Icon.Tag, newRole: Role, previousRole: Role, changerIconTag: Icon.Tag) extends OrgaEvent {
-	def toJson: JsValue = RoleChangeEventDto.jsonFormat.writes(this)
-}
-object RoleChangeEventDto {
-	implicit val jsonFormat = Json.writes[RoleChangeEventDto].transform { x => x.as[JsObject] + ("type" -> JsString("roleChange")) }
-}
 
 trait MembershipSrv extends EventsSource[OrgaEvent] {
 	def getMembershipStatusOf(accountId: Account.Id): Transition[TransacMode, MembershipStatusDto]
@@ -101,7 +86,5 @@ trait MembershipSrv extends EventsSource[OrgaEvent] {
 	 */
 	def createOrganization(userId: User.Id, project: CreateOrganizationCmd): Transition[TransacMode, (Organization, IconDto)]
 	def getOrganizationOf(accountId: Account.Id): Transition[TransacMode, Option[Organization.Id]]
-
-  def getOrgaStatus(accountId: Account.Id, cmd: GetOrgaStatusCmd):TiTac[GetOrgaStatusDto]
 }
 

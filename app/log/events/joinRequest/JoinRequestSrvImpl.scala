@@ -38,19 +38,19 @@ import settings.membership.Role
 class JoinRequestSrvImpl @Inject() (transacTransitionExce: TransacTransitionExec, membershipSrv: MembershipSrv, joinRequestDao: JoinRequestDao, membershipDao: MembershipDao, iconDao: IconDao, accountDao: AccountDao, logSrv: LogSrv) extends JoinRequestSrv {
 	val logger = Logger(classOf[JoinRequestSrvImpl])
 
-	case class CheckBonus(responderMember: IconDto, joinRequest: JoinRequest, requesterAccount: Account)
+	case class CheckBonus(responderMember: Icon, joinRequest: JoinRequest, requesterAccount: Account)
 
 	/**Checks if the responder satisfies all the following: the roleRestriction, the join request still exists, the requesters still exists, and the responders belongs to the organization the requesters ask to join to. */
 	private def check(responderAccountId: Account.Id, requestEventId: OrgaEvent.Id, roleRestriction: Role => Boolean): Transition[TransacMode, Try[CheckBonus]] = {
 		iconDao.findByAccount(responderAccountId).flatMap {
-			case Some(responderMember) if roleRestriction(responderMember.role) =>
+			case si @ Some(responderIcon) if roleRestriction(responderIcon.role) =>
 				joinRequestDao.findByEventId(requestEventId).flatMap {
 					case None => Transition.failure(new StoppedToExistException("The join request has expired"))
 					case Some(joinRequest) => {
-						if (joinRequest.organizationId == responderMember.organizationId) {
+						if (joinRequest.organizationId == responderIcon.organizationId) {
 							accountDao.findById(joinRequest.accountId).flatMap {
 								case None => Transition.failure(new StoppedToExistException("The requester account stopped to exist")) //  Should never happen
-								case Some(requesterAccount) => Transition.success(CheckBonus(responderMember, joinRequest, requesterAccount))
+								case Some(requesterAccount) => Transition.success(CheckBonus(responderIcon, joinRequest, requesterAccount))
 							}
 						} else {
 							logger.warn(s"Possible malicius attack of $responderAccountId. He accepted/rejected despite he belons to another organization")
@@ -76,18 +76,18 @@ class JoinRequestSrvImpl @Inject() (transacTransitionExce: TransacTransitionExec
 							for {
 								newEvent <- logSrv.newEvent()
 								_ <- membershipSrv.cancelJoinRequest(requesterAccount.id, true)
-								_ <- iconDao.insertRoleChangeEvent(newEvent._1, requesterIcon.organizationId, requesterIcon.tag, Novice, requesterIcon.role, requesterIcon.tag)
+								_ <- iconDao.insertRoleChangeEvent(newEvent._1, responderIcon.organizationId, requesterIcon.tag, Novice, requesterIcon.role, requesterIcon.tag)
 							} yield requesterIcon
 						case None => {
 							iconDao.insert(responderIcon.organizationId, requesterAccount.name, Novice, joinRequest.accountId).map { requesterIconTag =>
-								IconDto(requesterIconTag, requesterAccount.name, responderIcon.organizationId, Novice)
+								IconDto(requesterIconTag, requesterAccount.name, Novice)
 							}
 						}
 					}
 					responseEvent <- logSrv.newEvent()
 					_ <- membershipDao.insert(responderIcon.organizationId, requesterIcon.tag, joinRequest.accountId, acceptCmd.requestEventId, responseEvent._1, responderIcon.tag)
 				} yield 
-					Success(JoinResponseEventDto(responseEvent._1, responseEvent._2, Seq(acceptCmd.requestEventId), responderIcon.name, requesterAccount.name, Some(requesterIcon.name), None))
+					Success(JoinResponseEventDto(responseEvent._1, responseEvent._2, Seq(acceptCmd.requestEventId), responderIcon.name, requesterAccount.name, Some(requesterIcon), None))
 				
 		}
 	}
