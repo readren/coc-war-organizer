@@ -44,7 +44,7 @@ trait JoinRequestDao {
 
 trait IconDao {
 	def insert(organizationId: Organization.Id, name: String, role: Role, accountId: Account.Id): TiTac[Icon.Tag]
-	/** Gives the icon held by the received account in his current organization */
+	/** Gives the icon held by the received account in his current organisation */
 	def findByAccount(accountId: Account.Id): TiTac[Option[Icon]]
 	def findByHolder(organizationId: Organization.Id, holderAccountId: Account.Id): TiTac[Option[IconDto]]
 	def insertRoleChangeEvent(roleChangeEventId: OrgaEvent.Id, organizationId: Organization.Id, affectedIconTag: Icon.Tag, newRole: Role, previousRole: Role, changerIconTag: Icon.Tag): TiTac[Unit]
@@ -52,24 +52,24 @@ trait IconDao {
 }
 
 trait OrganizationDao {
-	/**Gives all the [[Organization]]s that fulfill the received criteria.*/
+	/**Gives all the [[Organisation]]s that fulfil the received criteria.*/
 	def search(criteria: SearchOrganizationsCmd): TiTac[Seq[Organization]]
-	/**Gives the [[Organization]] with the received id */
+	/**Gives the [[Organisation]] with the received id */
 	def find(organizationId: Organization.Id): TiTac[Option[Organization]]
 	/**
-	 * Inserts a new [[Organization]] into the underlying DB table and gives it.
-	 * @return the new [[Organization]]
+	 * Inserts a new [[Organisation]] into the underlying DB table and gives it.
+	 * @return the new [[Organisation]]
 	 */
 	def insert(project: CreateOrganizationCmd): TiTac[Organization]
-	/**Gives the [[Organization]] id of the received user [[Account]] */
+	/**Gives the [[Organisation]] id of the received user [[Account]] */
 	def findOf(accountId: Account.Id): TiTac[Option[Organization.Id]]
 }
 
-class MembershipSrvImpl @Inject() (transacTransitionExec: TransacTransitionExec, logSrv: LogSrv, organizationDao: OrganizationDao, membershipDao: MembershipDao, joinRequestDao: JoinRequestDao, iconDao: IconDao, accountSrv: AccountSrv)
+class MembershipSrvImpl (logSrv: LogSrv, organizationDao: OrganizationDao, membershipDao: MembershipDao, joinRequestDao: JoinRequestDao, iconDao: IconDao, accountSrv: AccountSrv)
 		extends MembershipSrv {
 	val logger = Logger(this.getClass())
 
-	override def getMembershipStatusOf(accountId: Account.Id): TiTac[MembershipStatusDto] = transacTransitionExec.inTransaction {
+	override def getMembershipStatusOf(accountId: Account.Id): TiTac[MembershipStatusDto] = TransacTransitionExec.inTransaction {
 		iconDao.findByAccount(accountId).flatMap {
 			case Some(icon) =>
 				organizationDao.find(icon.organizationId).map(MembershipStatusDto(_, Some(IconDto(icon.tag, icon.name, icon.role)), None))
@@ -83,7 +83,7 @@ class MembershipSrvImpl @Inject() (transacTransitionExec: TransacTransitionExec,
 
 	override def searchOrganizations(criteria: SearchOrganizationsCmd) = organizationDao.search(criteria)
 
-	override def sendJoinRequest(userId: UUID, sendJoinRequestCmd: SendJoinRequestCmd): TiTac[MembershipStatusDto] = transacTransitionExec.inTransaction {
+	override def sendJoinRequest(userId: UUID, sendJoinRequestCmd: SendJoinRequestCmd): TiTac[MembershipStatusDto] = TransacTransitionExec.inTransaction {
 		val accountId = Account.Id(userId, sendJoinRequestCmd.accountTag)
 		getMembershipStatusOf(accountId).flatMap {
 			case MembershipStatusDto(None, None, None) => organizationDao.find(sendJoinRequestCmd.organizationId).flatMap {
@@ -105,10 +105,10 @@ class MembershipSrvImpl @Inject() (transacTransitionExec: TransacTransitionExec,
 		}
 	}
 
-	override def cancelJoinRequest(accountId: Account.Id, becauseAccepted: Boolean): TiTac[MembershipStatusDto] = transacTransitionExec.inTransaction {
-		// check if he belongs to an organization (can happen if he cancels from an old not actualized client instance after having joined using other client instance)
+	override def cancelJoinRequest(accountId: Account.Id, becauseAccepted: Boolean): TiTac[MembershipStatusDto] = TransacTransitionExec.inTransaction {
+		// check if he belongs to an organisation (can happen if he cancels from an old not actualised client instance after having joined using other client instance)
 		organizationDao.findOf(accountId).flatMap {
-			// if it belongs to an organization, ignore the cancel command
+			// if it belongs to an organisation, ignore the cancel command
 			case Some(_) => getMembershipStatusOf(accountId)
 			// else create the cancel event if the request haven't expired. The cancel event is necessary to update the join request events seen by members 
 			case None =>
@@ -130,7 +130,7 @@ class MembershipSrvImpl @Inject() (transacTransitionExec: TransacTransitionExec,
 	}
 
 	override def createOrganization(userId: User.Id, createOrganizationCmd: CreateOrganizationCmd): TiTac[(Organization, IconDto)] =
-		transacTransitionExec.inTransaction {
+		TransacTransitionExec.inTransaction {
 			for {
 				organization <- organizationDao.insert(createOrganizationCmd)
 				accountId = Account.Id(userId, createOrganizationCmd.accountTag)

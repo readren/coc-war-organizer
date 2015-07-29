@@ -14,50 +14,76 @@ import utils.TransacMode
 import utils.Transition
 import settings.account.Account
 import common.typeAliases._
+import common.Command
+import war.central.AddParticipantCmd
+import war.central.AddAttackCmd
+import war.central.AddDefenseCmd
+import war.central.AddGuessCmd
+import war.central.StartBattleCmd
+import war.central.EndWarCmd
 
 object Role {
-	type Code = Char
-	private[this] val codeMap = Map(Leader.code -> Leader, Coleader.code -> Coleader, Veteran.code -> Veteran, Novice.code -> Novice)
-	def decode(code: Code) = codeMap(code)
-	implicit val jsonWrites: Writes[Role] = Writes[Role](_.toJson)
+  type Code = Char
+  private[this] val codeMap = Map(Leader.code -> Leader, Coleader.code -> Coleader, Veteran.code -> Veteran, Novice.code -> Novice)
+  def decode(code: Code) = codeMap(code)
+  implicit val jsonWrites: Writes[Role] = Writes[Role](_.toJson)
 }
 trait Role {
-	val canAcceptJoinRequests: Boolean
-	val canRejectJoinRequests: Boolean
-	val canJoinDirectly: Boolean
-	val code: Role.Code
-	def toJson = JsString(code.toString())
+  val canAcceptJoinRequests: Boolean
+  val canRejectJoinRequests: Boolean
+  val canJoinDirectly: Boolean
+  def canDo(cmd: Command, actorIcon: Icon): Boolean
+  val code: Role.Code
+  def toJson = JsString(code.toString())
 }
 
 case object Leader extends Role {
-	override val canAcceptJoinRequests = true
-	override val canRejectJoinRequests = true
-	override val canJoinDirectly = true
-	override val code = 'L'
+  override val canAcceptJoinRequests = true
+  override val canRejectJoinRequests = true
+  override val canJoinDirectly = true
+  override def canDo(cmd: Command, actorIcon: Icon): Boolean = Coleader.canDo(cmd, actorIcon)
+  override val code = 'L'
 }
 case object Coleader extends Role {
-	override val canAcceptJoinRequests = true
-	override val canRejectJoinRequests = true
-	override val canJoinDirectly = true
-	override val code = 'C'
+  override val canAcceptJoinRequests = true
+  override val canRejectJoinRequests = true
+  override val canJoinDirectly = true
+  override def canDo(cmd: Command, actorIcon: Icon): Boolean = Veteran.canDo(cmd, actorIcon) || (cmd match {
+    case _: AddParticipantCmd => true
+    case _: StartBattleCmd    => true
+    case _: EndWarCmd         => true
+    case _                    => false
+  })
+  override val code = 'C'
 }
 case object Veteran extends Role {
-	override val canAcceptJoinRequests = true
-	override val canRejectJoinRequests = true
-	override val canJoinDirectly = false
-	override val code = 'V'
+  override val canAcceptJoinRequests = true
+  override val canRejectJoinRequests = true
+  override val canJoinDirectly = false
+  override def canDo(cmd: Command, actorIcon: Icon): Boolean = Novice.canDo(cmd, actorIcon) || (cmd match {
+    case _: AddParticipantCmd => true
+    case _: AddAttackCmd      => true
+    case _: AddDefenseCmd     => true
+    case _                    => false
+  })
+  override val code = 'V'
 }
 case object Novice extends Role {
-	override val canAcceptJoinRequests = false
-	override val canRejectJoinRequests = false
-	override val canJoinDirectly = false
-	override val code = 'N'
+  override val canAcceptJoinRequests = false
+  override val canRejectJoinRequests = false
+  override val canJoinDirectly = false
+  override def canDo(cmd: Command, actorIcon: Icon): Boolean = cmd match {
+    case ap: AddParticipantCmd => ap.iconTag == actorIcon.tag
+    case _: AddGuessCmd        => true
+    case _                     => false
+  }
+  override val code = 'N'
 }
 
 case class Organization(id: Organization.Id, clanName: String, clanTag: String, description: Option[String])
 object Organization {
-	type Id = Int
-	implicit val jsonFormat = Json.writes[Organization]
+  type Id = Int
+  implicit val jsonFormat = Json.writes[Organization]
 }
 
 /**
@@ -66,25 +92,24 @@ object Organization {
  */
 case class Icon(organizationId: Organization.Id, tag: Icon.Tag, name: String, role: Role, holder: Account.Id)
 object Icon {
-	type Tag = Int
+  type Tag = Int
 }
 
 /**Association between an account and an organization */
 //case class Membership(organizationId: Organization.Id, memberTag: Icon.Tag, accountId: Account.Id, requestEventId: Event.Id, responseEventId: Event.Id, accepterMemberTag: Icon.Tag)
 
-
 trait MembershipSrv extends EventsSource[OrgaEvent] {
-	def getMembershipStatusOf(accountId: Account.Id): Transition[TransacMode, MembershipStatusDto]
-	/**Gives all the [[Organization]]s that fulfill the received criteria.*/
-	def searchOrganizations(criteria: SearchOrganizationsCmd): Transition[TransacMode, Seq[Organization]]
-	def sendJoinRequest(userId: User.Id, sendJoinRequestCmd: SendJoinRequestCmd): Transition[TransacMode, MembershipStatusDto]
-	def cancelJoinRequest(accountId: Account.Id, becauseAccepted: Boolean): Transition[TransacMode, MembershipStatusDto]
-	def leaveOrganization(accountId: Account.Id): Transition[TransacMode, MembershipStatusDto]
-	/**
-	 * Creates a new [[Organization]] and stores it into the underlying DB.
-	 * @return the created [[Organization]]
-	 */
-	def createOrganization(userId: User.Id, project: CreateOrganizationCmd): Transition[TransacMode, (Organization, IconDto)]
-	def getOrganizationOf(accountId: Account.Id): Transition[TransacMode, Option[Organization.Id]]
+  def getMembershipStatusOf(accountId: Account.Id): Transition[TransacMode, MembershipStatusDto]
+  /**Gives all the [[Organization]]s that fulfill the received criteria.*/
+  def searchOrganizations(criteria: SearchOrganizationsCmd): Transition[TransacMode, Seq[Organization]]
+  def sendJoinRequest(userId: User.Id, sendJoinRequestCmd: SendJoinRequestCmd): Transition[TransacMode, MembershipStatusDto]
+  def cancelJoinRequest(accountId: Account.Id, becauseAccepted: Boolean): Transition[TransacMode, MembershipStatusDto]
+  def leaveOrganization(accountId: Account.Id): Transition[TransacMode, MembershipStatusDto]
+  /**
+   * Creates a new [[Organization]] and stores it into the underlying DB.
+   * @return the created [[Organization]]
+   */
+  def createOrganization(userId: User.Id, project: CreateOrganizationCmd): Transition[TransacMode, (Organization, IconDto)]
+  def getOrganizationOf(accountId: Account.Id): Transition[TransacMode, Option[Organization.Id]]
 }
 

@@ -34,6 +34,14 @@ app.factory('utilsSrv', [function(){
 			return result;
 		},
 		
+		fill: function(size, func) {
+			var result = [];
+			for( var i=0; i<size; ++i) {
+				result.push(func(i));
+			}
+			return result;
+		},
+		
 		mapHttpData: function(promise) {
 			return promise.then(function(value){
 				return value.data;

@@ -35,7 +35,7 @@ import settings.membership.Role
  * @author Gustavo
  *
  */
-class JoinRequestSrvImpl @Inject() (transacTransitionExce: TransacTransitionExec, membershipSrv: MembershipSrv, joinRequestDao: JoinRequestDao, membershipDao: MembershipDao, iconDao: IconDao, accountDao: AccountDao, logSrv: LogSrv) extends JoinRequestSrv {
+class JoinRequestSrvImpl @Inject() (membershipSrv: MembershipSrv, joinRequestDao: JoinRequestDao, membershipDao: MembershipDao, iconDao: IconDao, accountDao: AccountDao, logSrv: LogSrv) extends JoinRequestSrv {
 	val logger = Logger(classOf[JoinRequestSrvImpl])
 
 	case class CheckBonus(responderMember: Icon, joinRequest: JoinRequest, requesterAccount: Account)
@@ -66,7 +66,7 @@ class JoinRequestSrvImpl @Inject() (transacTransitionExce: TransacTransitionExec
 		}
 	}
 
-	override def accept(userId: User.Id, acceptCmd: JoinRespondCmd): Transition[TransacMode, Try[JoinResponseEventDto]] = transacTransitionExce.inTransaction {
+	override def accept(userId: User.Id, acceptCmd: JoinRespondCmd): Transition[TransacMode, Try[JoinResponseEventDto]] = TransacTransitionExec.inTransaction {
 		check(Account.Id(userId, acceptCmd.responderAccountTag), acceptCmd.requestEventId, _.canAcceptJoinRequests).flatMap {
 			case Failure(exception) => Transition.failure(exception)
 			case Success(CheckBonus(responderIcon, joinRequest, requesterAccount)) =>
@@ -92,7 +92,7 @@ class JoinRequestSrvImpl @Inject() (transacTransitionExce: TransacTransitionExec
 		}
 	}
 
-	override def reject(userId: User.Id, rejectCmd: JoinRespondCmd): Transition[TransacMode, Try[JoinResponseEventDto]] = transacTransitionExce.inTransaction {
+	override def reject(userId: User.Id, rejectCmd: JoinRespondCmd): Transition[TransacMode, Try[JoinResponseEventDto]] = TransacTransitionExec.inTransaction {
 		val rejecterAccountId = Account.Id(userId, rejectCmd.responderAccountTag)
 		check(rejecterAccountId, rejectCmd.requestEventId, _.canRejectJoinRequests).flatMap {
 			case Failure(exception) => Transition.failure(exception)

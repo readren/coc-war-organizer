@@ -2,10 +2,10 @@
 <div ng-controller="teamEditorCtrl as ctrl">
 	<div class="flexRow">
 		<div class="flexColumn alignStrech">
-			<div ng-repeat="freeIcon in ctrl.freeIcons">
-				<div style="flex-grow: 1;">{{freeIcon.name}}</div>
+			<div ng-repeat="freeMember in ctrl.freeMembers">
+				<div style="flex-grow: 1;">{{freeMember.name}}</div>
 				<div>
-					<button ng-click="kick out(freeIcon)">kick out</button>
+					<button ng-click="kick out(freeMember)">kick out</button>
 				</div>
 			</div>
 		</div>
@@ -16,9 +16,9 @@
 					<div style="width: 2em;">{{slot.position}}</div>
 					<div style="flex-grow: 1;">{{slot.icon.name}}</div>
 					<div>
-						<button ng-click="pushUp(slot)">push up</button>
-						<button ng-click="pushDown(slot)">push down</button>
-						<button ng-click="remove(slot)">remove</button>
+						<button ng-click="ctrl.pushUp(slot)">push up</button>
+						<button ng-click="ctrl.pushDown(slot)">push down</button>
+						<button ng-click="ctrl.remove(slot)">remove</button>
 					</div>
 				</div>
 
@@ -26,7 +26,6 @@
 					<div>{{slot.position}}</div>
 				</div>
 
-				<div></div>
 			</div>
 		</div>
 	</div>

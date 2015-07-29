@@ -21,49 +21,50 @@ import utils.TransacTransitionExec
 import play.api.libs.json.Json
 import play.api.libs.json.JsValue
 import play.api.libs.json.Writes
+import common.ParameterlessCmd
+import scala.util.Try
 
 /**
  * @author Gustavo
  */
 
-
-
 object WarEvent {
-	type Id = Long
-	type Instant = Long
-	implicit def jsonWrites: Writes[WarEvent] = Writes[WarEvent] ( _.toJson )
+  type Id = Long
+  type Instant = org.joda.time.DateTime
+  implicit def jsonWrites: Writes[WarEvent] = Writes[WarEvent](_.toJson)
 }
 trait WarEvent {
-	val id: WarEvent.Id
-	val instant: WarEvent.Instant
-	val actorIconName: String
-	def toJson: JsValue
+  val id: WarEvent.Id
+  val instant: WarEvent.Instant
+  val actorIconName: String
+  def toJson: JsValue
+  def undoOp(centralPerformer:CentralPerformer): (WarEvent, Icon) => TtTm[UndoEvent]
 }
 case class WarEventInfo(id: WarEvent.Id, instant: WarEvent.Instant, actorIconName: String)
 object WarEventInfo {
-	implicit val jsonWrites = Json.writes[WarEventInfo]
+  implicit val jsonWrites = Json.writes[WarEventInfo]
 }
 abstract class WarEventBase(wei: WarEventInfo) extends WarEvent {
-	val id = wei.id
-	val instant = wei.instant
-	val actorIconName = wei.actorIconName
+  val id = wei.id
+  val instant = wei.instant
+  val actorIconName = wei.actorIconName
 }
-
 
 trait CentralSrv {
 
-  def getWarStatus(accountId: Account.Id, cmd: GetWarStatusCmd): TiTac[GetWarStatusDto]
-  
-	def startPreparation(accountId: Account.Id, cmd: StartPreparationCmd): TiTac[StartPreparationEvent]
-	def addParticipant(accountId: Account.Id, cmd: AddParticipantCmd): TiTac[AddParticipantEvent]
-	def startBattle(accountId: Account.Id, cmd: StartBattleCmd): TiTac[StartBattleEvent]
-	def addGuess(accountId: Account.Id, cmd: AddGuessCmd): TiTac[AddGuessEvent]
-	def getSchedule(accountId: Account.Id, cmd: GetScheduleCmd): TiTac[ScheduleDto]
-	def addAttack(accountId: Account.Id, cmd: AddAttackCmd): TiTac[AddAttackEvent]
-	def addDefense(accountId: Account.Id, cmd: AddDefenseCmd): TiTac[AddDefenseEvent]
-	def endWar(accountId: Account.Id, cmd: EndWarCmd): TiTac[EndWarEvent]
-	
-	def undo(accountId: Account.Id, cmd: UndoCmd): TiTac[UndoEvent]
+  def getWarInitState(accountId: Account.Id, cmd: ParameterlessCmd): TiTac[Seq[WarEvent]]
+  def getWarEventsAfter(accountId: Account.Id, cmd: GetWarEventsAfterCmd): TiTac[Seq[WarEvent]]
+
+  def startPreparation(accountId: Account.Id, cmd: StartPreparationCmd): TtTm[Seq[WarEvent]]
+  def addParticipant(accountId: Account.Id, cmd: AddParticipantCmd): TtTm[Seq[WarEvent]]
+  def startBattle(accountId: Account.Id, cmd: StartBattleCmd): TtTm[Seq[WarEvent]]
+  def addGuess(accountId: Account.Id, cmd: AddGuessCmd): TtTm[Seq[WarEvent]]
+  def getSchedule(accountId: Account.Id, cmd: GetScheduleCmd): TiTac[ScheduleDto]
+  def addAttack(accountId: Account.Id, cmd: AddAttackCmd): TtTm[Seq[WarEvent]]
+  def addDefense(accountId: Account.Id, cmd: AddDefenseCmd): TtTm[Seq[WarEvent]]
+  def endWar(accountId: Account.Id, cmd: EndWarCmd): TtTm[Seq[WarEvent]]
+
+  def undo(accountId: Account.Id, cmd: UndoCmd): TtTm[Seq[WarEvent]]
 
 }
 

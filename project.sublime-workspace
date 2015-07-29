@@ -103,14 +103,22 @@
 			}
 		},
 		{
-			"contents": "#Evolutions\n\n# --- !Ups\n\n\nCREATE TABLE war_event (\n	id 							BIGSERIAL PRIMARY KEY,\n	instant						TIMESTAMP,\n	foreign_key					BIGINT\n);\n\nCREATE TABLE war_clash (\n	clash_start_event_id 		BIGINT PRIMARY KEY, -- clash_id -- REFERENCES war_event\n	battle_start_event_id		BIGINT DEFAULT NULL, -- REFERENCES war_event\n	clash_end_event_id			BIGINT DEFAULT NULL, -- REFERENCES war_event -- this event id coincides with the clash_start_event_id of the immediate following clash\n\n	clash_start_orga_event_id 	BIGINT NOT NULL -- REFERENCES orga_event\n	organization_id				INTEGER NOT NULL REFERENCES orga_organization  ON DELETE CASCADE,\n	enemy_clan_name				TEXT,\n	enemy_clan_tag				TEXT,\n	UNIQUE(organization_id, clash_end_event_id)\n);\n\n\nCREATE TABLE war_participant (\n	add_event_id				BIGINT PRIMARY KEY, -- participant_id  -- REFERENCES war_event\n	remove_event_id				BIGINT DEFAULT NULL, -- REFERENCES war_event\n\n	clash_id		 			BIGINT NOT NULL REFERENCES war_clash ON DELETE CASCADE,\n	member_tag					INTEGER NOT NULL,\n	base_position				SMALLINT,\n	UNIQUE(clash_id, base_position, remove_event_id)\n);\n\nCREATE TABLE war_reservation (\n	add_event_id				BIGINT PRIMARY KEY, -- war_reservation_id -- REFERENCES war_event\n	remove_event_id				BIGINT DEFAULT NULL, -- REFERENCES war_event\n\n	participant_id		 		INTEGER NOT NULL REFERENCES war_participant ON DELETE CASCADE,\n	target_position 			SMALLINT NOT NULL,\n	UNIQUE(participant_id, target_position, remove_event_id)\n);\n\nCREATE TABLE war_guess (\n	add_event_id				BIGINT PRIMARY KEY, -- war_guess_id -- REFERENCES war_event\n	remove_event_id				BIGINT DEFAULT NULL, -- REFERENCES war_event\n\n	clash_id					BIGINT NOT NULL REFERENCES war_clash ON DELETE CASCADE,\n	guesser_member_tag			INTEGER NOT NULL,\n	judged_participant_id		BIGINT NOT NULL REFERENCES war_participant ON DELETE CASCADE,\n	target_position				SMALLINT NOT NULL,\n	one_star_forecast			SMALLINT NOT NULL, -- guesstimate of one star\n	two_stars_forecast			SMALLINT NOT NULL, -- guesstimate of two stars\n	three_stars_forecast		SMALLINT NOT NULL, -- guesstimate of thres stars\n	UNIQUE(clash_id, guesser_member_tag, judged_participant_id, target_position, remove_event_id)\n);\n\nCREATE TABLE war_fight (\n	add_event_id				BIGINT PRIMARY KEY, -- war_fight_id -- REFERENCES war_event\n	remove_event_id				BIGINT DEFAULT NULL, -- REFERENCES war_event\n\n	clash_id					BIGINT NOT NULL REFERENCES war_clash ON DELETE CASCADE,\n	participant_id 				BIGINT NOT NULL REFERENCES war_participant ON DELETE CASCADE,\n	opponent_position 			SMALLINT NOT NULL,\n	kind						BOOLEAN NOT NULL, -- true - > attack , false - > defense\n	suwe						INTEGER NOT NULL, -- seconds until war end.\n	stars 						SMALLINT NOT NULL, -- number of achieved stars\n	destruction 				SMALLINT NOT NULL, -- % of destruction\n	UNIQUE(clash_id, participant_id, opponent_position, kind, remove_event_id)\n);\n\nCREATE TABLE war_plan (\n	add_event_id				BIGINT PRIMARY KEY, -- war_plan_id -- REFERENCES war_event\n	remove_event_id				BIGINT DEFAULT NULL, -- REFERENCES war_event\n\n	clash_id					BIGINT NOT NULL REFERENCES war_clash ON DELETE CASCADE,\n	participant_id 				BIGINT NOT NULL REFERENCES war_participant ON DELETE CASCADE,\n	target_position				SMALLINT,\n	attack_number				SMALLINT,\n	UNIQUE(clash_id, participant_id, target_position, remove_event_id)\n);\n\nCREATE TABLE war_queue (\n	add_event_id				BIGINT PRIMARY KEY, -- war_queue_id -- REFERENCES war_event\n	remove_event_id				BIGINT DEFAULT NULL, -- REFERENCES war_event\n\n	clash_id					BIGINT REFERENCES war_clash ON DELETE CASCADE,\n	target_position				SMALLINT,\n	scheddule					INTEGER[], -- each item indicates the time (in seconds until war end) after which the member whose position is equal to the index is allowed to attack. \n\n	UNIQUE(clash_id, target_position, remove_event_id)\n);\n\n\n# --- !Downs\n\nDROP TABLE IF EXISTS war_queue;\nDROP TABLE IF EXISTS war_plan;\nDROP TABLE IF EXISTS war_fight;\nDROP TABLE IF EXISTS war_guess;\nDROP TABLE IF EXISTS war_reservation;\nDROP TABLE IF EXISTS war_participant;\nDROP TABLE IF EXISTS war_clash;\nDROP TABLE IF EXISTS war_event;\n\n\n",
+			"contents": "#Evolutions\n\n# --- !Ups\n\n\nCREATE TABLE war_event (\n	id 							BIGSERIAL PRIMARY KEY,\n	instant						TIMESTAMP NOT NULL,\n	actor_icon_name				TEXT NOT NULL,\n	foreign_key					BIGINT DEFAULT NULL\n);\nCREATE INDEX war_event_instant_index ON war_even(instant); -- TODO do a uniqueTimestamp function to avoid the necesity of the BIGSERIAL and let the instant be the primary key.\n\n\n-- CREATE TABLE war_clash (\n-- 	start_preparation_event_id 	BIGINT PRIMARY KEY, -- clash_id -- REFERENCES war_event\n-- 	start_battle_event_id		BIGINT DEFAULT NULL, -- REFERENCES war_event\n-- 	end_war_event_id			BIGINT DEFAULT NULL, -- REFERENCES war_event -- this event id coincides with the start_preparation_event_id of the immediate following clash\n\n-- 	start_preparation_orga_event_id 	BIGINT NOT NULL -- REFERENCES orga_event\n-- 	organization_id				INTEGER NOT NULL REFERENCES orga_organization  ON DELETE CASCADE,\n-- 	enemy_clan_name				TEXT,\n-- 	enemy_clan_tag				TEXT,\n-- 	UNIQUE(organization_id, end_war_event_id)\n-- );\n\nCREATE TABLE war_clash (\n	add_event_id 				BIGINT PRIMARY KEY, -- clash_id -- REFERENCES war_event\n	remove_event_id				BIGINT DEFAULT NULL, -- REFERENCES war_event\n\n	start_clash_orga_event_id 	BIGINT NOT NULL, -- REFERENCES orga_event\n	organization_id				INTEGER NOT NULL REFERENCES orga_organization  ON DELETE CASCADE,\n	enemy_clan_name				TEXT,\n	enemy_clan_tag				TEXT,\n\n	-- mutable fields: no cached query result should depend on the value of this fields. For now, only the getWarPhaseInfo query depends on them.\n	current_battle_id			BIGINT DEFAULT NULL, -- REFERENCES war_battle. Set when a start battle event is added, and unset when that battle event is undone.\n	next_clash_id				BIGINT DEFAULT NULL, -- REFERENCES war_clash. Set when the next war preparation is started and unset when that war is undone.\n 	UNIQUE(organization_id, next_clash_id, remove_event_id)\n);\n--CREATE INDEX war_clash_organization_index ON war_clash(organization_id, remove_event_id);\n\nCREATE TABLE war_battle (\n	add_event_id 				BIGINT PRIMARY KEY, -- battle_id  -- REFERENCES war_event\n	remove_event_id 			BIGINT DEFAULT NULL, -- REFERENCES war_event\n	clash_id		 			BIGINT NOT NULL REFERENCES war_clash ON DELETE CASCADE,\n	UNIQUE(clash_id, remove_event_id),\n\n	current_end_id				BIGINT DEFAULT NULL -- REFERENCES war_end. Set when a end war event is added, and unset when that end event is undone.\n);\n\nCREATE TABLE war_end (\n	add_event_id 				BIGINT PRIMARY KEY, -- end_id  -- REFERENCES war_event\n	remove_event_id 			BIGINT DEFAULT NULL, -- REFERENCES war_event\n	battle_id		 			BIGINT NOT NULL REFERENCES war_battle ON DELETE CASCADE,\n	UNIQUE(battle_id, remove_event_id)\n);\n\nCREATE TABLE war_participant (\n	add_event_id				BIGINT PRIMARY KEY, -- participant_id  -- REFERENCES war_event\n	remove_event_id				BIGINT DEFAULT NULL, -- REFERENCES war_event\n\n	clash_id		 			BIGINT NOT NULL REFERENCES war_clash ON DELETE CASCADE,\n	icon_tag					INTEGER NOT NULL,\n	base_position				SMALLINT,\n	UNIQUE(clash_id, base_position, remove_event_id)\n);\n\nCREATE TABLE war_reservation (\n	add_event_id				BIGINT PRIMARY KEY, -- war_reservation_id -- REFERENCES war_event\n	remove_event_id				BIGINT DEFAULT NULL, -- REFERENCES war_event\n\n	clash_id		 			BIGINT NOT NULL REFERENCES war_clash ON DELETE CASCADE,\n	participant_id		 		INTEGER NOT NULL REFERENCES war_participant ON DELETE CASCADE,\n	target_position 			SMALLINT NOT NULL,\n	UNIQUE(participant_id, target_position, remove_event_id)\n);\n\nCREATE TABLE war_guess (\n	add_event_id				BIGINT PRIMARY KEY, -- war_guess_id -- REFERENCES war_event\n	remove_event_id				BIGINT DEFAULT NULL, -- REFERENCES war_event\n\n	clash_id					BIGINT NOT NULL REFERENCES war_clash ON DELETE CASCADE,\n	guesser_member_tag			INTEGER NOT NULL,\n	judged_participant_id		BIGINT NOT NULL REFERENCES war_participant ON DELETE CASCADE,\n	target_position				SMALLINT NOT NULL,\n	one_star_forecast			SMALLINT NOT NULL, -- guesstimate of one star\n	two_stars_forecast			SMALLINT NOT NULL, -- guesstimate of two stars\n	three_stars_forecast		SMALLINT NOT NULL, -- guesstimate of thres stars\n	UNIQUE(clash_id, guesser_member_tag, judged_participant_id, target_position, remove_event_id)\n);\n\nCREATE TABLE war_fight (\n	add_event_id				BIGINT PRIMARY KEY, -- war_fight_id -- REFERENCES war_event\n	remove_event_id				BIGINT DEFAULT NULL, -- REFERENCES war_event\n\n	battle_id					BIGINT NOT NULL REFERENCES war_clash ON DELETE CASCADE,\n	participant_position		SMALLINT NOT NULL,\n	opponent_position 			SMALLINT NOT NULL,\n	kind						BOOLEAN NOT NULL, -- true - > attack , false - > defense\n	suwe						INTEGER NOT NULL, -- seconds until war end.\n	stars 						SMALLINT NOT NULL, -- number of achieved stars\n	destruction 				SMALLINT NOT NULL, -- % of destruction\n	UNIQUE(battle_id, participant_id, opponent_position, kind, remove_event_id)\n);\n\nCREATE TABLE war_plan (\n	add_event_id				BIGINT PRIMARY KEY, -- war_plan_id -- REFERENCES war_event\n	remove_event_id				BIGINT DEFAULT NULL, -- REFERENCES war_event\n\n	clash_id					BIGINT NOT NULL REFERENCES war_clash ON DELETE CASCADE,\n	participant_id 				BIGINT NOT NULL REFERENCES war_participant ON DELETE CASCADE,\n	target_position				SMALLINT,\n	attack_number				SMALLINT,\n	UNIQUE(clash_id, participant_id, target_position, remove_event_id)\n);\n\nCREATE TABLE war_queue (\n	add_event_id				BIGINT PRIMARY KEY, -- war_queue_id -- REFERENCES war_event\n	remove_event_id				BIGINT DEFAULT NULL, -- REFERENCES war_event\n\n	clash_id					BIGINT REFERENCES war_clash ON DELETE CASCADE,\n	target_position				SMALLINT,\n	scheddule					INTEGER[], -- each item indicates the time (in seconds until war end) after which the member whose position is equal to the index is allowed to attack. \n\n	UNIQUE(clash_id, target_position, remove_event_id)\n);\n\n\n# --- !Downs\n\nDROP TABLE IF EXISTS war_queue;\nDROP TABLE IF EXISTS war_plan;\nDROP TABLE IF EXISTS war_fight;\nDROP TABLE IF EXISTS war_guess;\nDROP TABLE IF EXISTS war_reservation;\nDROP TABLE IF EXISTS war_participant;\nDROP TABLE IF EXISTS war_end;\nDROP TABLE IF EXISTS war_battle;\nDROP TABLE IF EXISTS war_clash;\nDROP INDEX IF EXISTS war_event_instant_index;\nDROP TABLE IF EXISTS war_event;\n\n\n",
 			"file": "conf/evolutions/default/3.sql",
-			"file_size": 4096,
-			"file_write_time": 130792451747972194,
+			"file_size": 6202,
+			"file_write_time": 130820007454499034,
 			"settings":
 			{
-				"buffer_size": 4060,
+				"buffer_size": 6133,
 				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "/C/Users/Gustavo/Downloads/theme-11461.xml",
+			"settings":
+			{
+				"buffer_size": 1938,
+				"line_ending": "Unix"
 			}
 		}
 	],
@@ -181,13 +189,28 @@
 	[
 		"/C/Projects/activator/coc-war-organizer/app",
 		"/C/Projects/activator/coc-war-organizer/app/ngDirectives",
-		"/C/Projects/activator/coc-war-organizer/conf/evolutions",
 		"/C/Projects/activator/coc-war-organizer/misc",
 		"/C/Projects/activator/coc-war-organizer/project",
 		"/C/Projects/activator/coc-war-organizer"
 	],
 	"file_history":
 	[
+		"/C/Projects/tutorials/sbt/build.sbt",
+		"/F/Projects/activator/smn-nudo/target/universal/smn-nudo-1.0-SNAPSHOT/bin/smn_nudo.bat",
+		"/C/Temp/stage/conf/logback.xml",
+		"/F/Projects/activator/smn-nudo/src/main/java/actualizacion/ActualizacionDaoImpl.java",
+		"/F/Projects/activator/smn-nudo/src/main/java/actualizacion/ActualizacionCtrl.java",
+		"/C/Temp/stage/conf/application.conf",
+		"/C/Temp/smn-nudo/bin/application.home_IS_UNDEFINED/logs/application.log",
+		"/C/Temp/smn-nudo/bin/smn-nudo.bat",
+		"/C/Temp/smn-nudo/conf/application.conf",
+		"/F/Develop/ScalaIde4rc2/eclipse.ini",
+		"/C/Temp/smn-nudo/bin/logs/application.log",
+		"/C/Temp/smn-nudo/conf/routes",
+		"/C/Temp/smn-nudo/index.html",
+		"/C/Temp/smn-nudo/scripts/vendor.95ce1964.js",
+		"/C/Temp/smn-nudo/scripts/scripts.c5d9d3da.js",
+		"/C/Users/Gustavo/Desktop/server.log.2015-06-23",
 		"/C/Users/Gustavo/AppData/Roaming/Sublime Text 3/Packages/User/JsFormat.sublime-settings",
 		"/C/Users/Gustavo/AppData/Roaming/Sublime Text 3/Packages/JsFormat/JsFormat.sublime-settings",
 		"/C/Projects/activator/coc-war-organizer/app/ngDirectives/reaDrag.js",
@@ -271,6 +294,11 @@
 		"case_sensitive": true,
 		"find_history":
 		[
+			"clash_start_orga_event_id",
+			"clash_end_event_id",
+			"battle_start_event_id",
+			"start_war_event_id",
+			"clash_start_event_id",
 			"preparation_start_event_id",
 			"war_end_event_id",
 			"cancel_reason",
@@ -312,6 +340,11 @@
 		"regex": false,
 		"replace_history":
 		[
+			"start_preparation_orga_event_id",
+			"end_war_event_id",
+			"start_battle_event_id",
+			"start_preparation_event_id",
+			"start_war_event_id",
 			"",
 			"_event_id",
 			"nextval",
@@ -329,7 +362,7 @@
 	"groups":
 	[
 		{
-			"selected": 2,
+			"selected": 3,
 			"sheets":
 			[
 				{
@@ -358,7 +391,7 @@
 						"translation.y": 120.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 2,
+					"stack_index": 3,
 					"type": "text"
 				},
 				{
@@ -374,8 +407,8 @@
 						"selection":
 						[
 							[
-								370,
-								379
+								549,
+								727
 							]
 						],
 						"settings":
@@ -384,10 +417,10 @@
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 420.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 1,
+					"stack_index": 2,
 					"type": "text"
 				},
 				{
@@ -396,15 +429,15 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 4060,
+						"buffer_size": 6133,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								517,
-								517
+								3272,
+								3272
 							]
 						],
 						"settings":
@@ -413,7 +446,39 @@
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 1620.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "/C/Users/Gustavo/Downloads/theme-11461.xml",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1938,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1162,
+								1162
+							]
+						],
+						"settings":
+						{
+							"is_xml": true,
+							"syntax": "Packages/XML/XML.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true,
+							"word_wrap": false
+						},
+						"translation.x": -0.0,
+						"translation.y": 180.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 0,
@@ -473,7 +538,7 @@
 	"project": "project.sublime-project",
 	"replace":
 	{
-		"height": 52.0
+		"height": 66.0
 	},
 	"save_all_on_build": true,
 	"select_file":

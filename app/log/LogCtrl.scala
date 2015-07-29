@@ -63,7 +63,7 @@ trait RetroEvent extends OrgaEvent {
 trait LogSrv {
 	def getLogInitState(accountId:Account.Id, getLogInitStateCmd: GetLogInitStateCmd): TiTac[GetLogInitStateDto]
 	def getEventsAfter(accountId:Account.Id, getEventsAfterCmd: GetEventsAfterCmd): TiTac[Seq[OrgaEvent]]
-	def newEvent(): Transition[TransacMode, (OrgaEvent.Id, OrgaEvent.Instant)]
+	def newEvent(): TiTac[(OrgaEvent.Id, OrgaEvent.Instant)]
 }
 
 

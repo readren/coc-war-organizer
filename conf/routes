@@ -27,6 +27,8 @@ POST   /log/getEventsAfter                             @log.LogCtrl.getEventsAft
 POST   /log/joinRequest/accept                         @log.events.joinRequest.JoinRequestCtrl.accept
 POST   /log/joinRequest/reject                         @log.events.joinRequest.JoinRequestCtrl.reject
 
+POST   /war/central/getWarInitState                       @war.central.CentralCtrl.getWarInitState
+POST   /war/central/getWarEventsAfter                     @war.central.CentralCtrl.getWarEventsAfter
 
 # Dynamic part of the url
 GET    /views/$template<.+>.html                       @auth.controllers.ApplicationController.view(template)

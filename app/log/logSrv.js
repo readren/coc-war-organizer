@@ -39,8 +39,8 @@ app.factory('logSrv', [ '$http', '$auth', '$timeout', '$rootScope', 'accountSrv'
 		return members;
 	};
 	
-	var eventsSortCriteria = function(a, b) {
-		return b.id - a.id;
+	var laterInstantFirst = function(a, b) {
+		return b.instant - a.instant;
 	};
 	
 	var getEventsAndMembers = function() {
@@ -61,7 +61,7 @@ app.factory('logSrv', [ '$http', '$auth', '$timeout', '$rootScope', 'accountSrv'
 									return utilsSrv.find(events, function(oe) {
 										return ne.id === oe.id; 
 									}) === null;
-								}).sort(eventsSortCriteria); // NOTE that the sorting is scoped to the events that arrive in the same response. This avoids an event from an older response be before an event from a newer response, even if event from the older response is newer. 
+								}).sort(laterInstantFirst); // NOTE that the sorting is scoped to the events that arrive in the same response. This avoids an event from an older response be before an event from a newer response, even if event from the older response is newer. 
 								
 								// for each new event, from oldest to newest
 								for( var i = newEvents.length; --i >= 0;) {
@@ -85,7 +85,7 @@ app.factory('logSrv', [ '$http', '$auth', '$timeout', '$rootScope', 'accountSrv'
 					} else {
 						return $http.post('/log/getLogInitState', {actor: currentAccount.tag}).then(
 							function(response) {
-								var events = eventsCache[currentAccount.tag] = response.data.events.sort(eventsSortCriteria);
+								var events = eventsCache[currentAccount.tag] = response.data.events.sort(laterInstantFirst);
 								var members = membersCache[currentAccount.tag] = response.data.members;
 								return { currentAccount: currentAccount, events: events, members: members };
 							},
@@ -103,12 +103,14 @@ app.factory('logSrv', [ '$http', '$auth', '$timeout', '$rootScope', 'accountSrv'
 
 	
 	return {
+		/**Gives an Array[IconDto] with the current members of the organisation */
 		getMembers: function() {
-			return getEventsAndMembers().then(function(eam) { return eam.members; });
+			return getEventsAndMembers().then(function(eam) { return eam.members.slice(0); });
 		},
 
+		/** Gives an Array[OrgaEvent] with the more recent organisation events. */
 		getEvents: function() {
-			return getEventsAndMembers().then(function(eam) { return eam.events; });
+			return getEventsAndMembers().then(function(eam) { return eam.events.slice(0); });
 		},
 		
 		/* Updates the state of the independent machines affected by the inciting event. Given the server has no direct reference to the independent machines, it refers to them trough the ids of the events who conceived them (the affectedEvents). */  
