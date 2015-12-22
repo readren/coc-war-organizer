@@ -1,7 +1,7 @@
 'use strict';
 /*global app: false */
 
-app.factory('logSrv', [ '$http', '$auth', '$timeout', '$rootScope', 'accountSrv', 'utilsSrv', function($http, $auth, $timeout, $rootScope, accountSrv) {
+app.factory('logSrv', [ '$http', '$auth', '$timeout', '$rootScope', 'accountSrv', 'utilsSrv', function($http, $auth, $timeout, $rootScope, accountSrv, utilsSrv) {
 	var eventsCache = {};
 	var membersCache = {};
 	var lastQueryToken = 0;
@@ -105,12 +105,12 @@ app.factory('logSrv', [ '$http', '$auth', '$timeout', '$rootScope', 'accountSrv'
 	return {
 		/**Gives an Array[IconDto] with the current members of the organisation */
 		getMembers: function() {
-			return getEventsAndMembers().then(function(eam) { return eam.members.slice(0); });
+			return getEventsAndMembers.call(this).then(function(eam) { return eam.members.slice(0); });
 		},
 
 		/** Gives an Array[OrgaEvent] with the more recent organisation events. */
 		getEvents: function() {
-			return getEventsAndMembers().then(function(eam) { return eam.events.slice(0); });
+			return getEventsAndMembers.call(this).then(function(eam) { return eam.events.slice(0); });
 		},
 		
 		/* Updates the state of the independent machines affected by the inciting event. Given the server has no direct reference to the independent machines, it refers to them trough the ids of the events who conceived them (the affectedEvents). */  

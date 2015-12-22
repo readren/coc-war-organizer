@@ -9,7 +9,7 @@ CREATE TABLE war_event (
 	actor_icon_name				TEXT NOT NULL,
 	foreign_key					BIGINT DEFAULT NULL
 );
-CREATE INDEX war_event_instant_index ON war_even(instant); -- TODO do a uniqueTimestamp function to avoid the necesity of the BIGSERIAL and let the instant be the primary key.
+CREATE INDEX war_event_instant_index ON war_event(instant); -- TODO do a uniqueTimestamp function to avoid the necesity of the BIGSERIAL and let the instant be the primary key.
 
 
 -- CREATE TABLE war_clash (
@@ -28,13 +28,13 @@ CREATE TABLE war_clash (
 	add_event_id 				BIGINT PRIMARY KEY, -- clash_id -- REFERENCES war_event
 	remove_event_id				BIGINT DEFAULT NULL, -- REFERENCES war_event
 
-	start_clash_orga_event_id 	BIGINT NOT NULL -- REFERENCES orga_event
+	start_clash_orga_event_id 	BIGINT NOT NULL, -- REFERENCES orga_event
 	organization_id				INTEGER NOT NULL REFERENCES orga_organization  ON DELETE CASCADE,
 	enemy_clan_name				TEXT,
 	enemy_clan_tag				TEXT,
 
 	-- mutable fields: no cached query result should depend on the value of this fields. For now, only the getWarPhaseInfo query depends on them.
-	current_battle_id			BIGINT DEFAULT NULL -- REFERENCES war_battle. Set when a start battle event is added, and unset when that battle event is undone.
+	current_battle_id			BIGINT DEFAULT NULL, -- REFERENCES war_battle. Set when a start battle event is added, and unset when that battle event is undone.
 	next_clash_id				BIGINT DEFAULT NULL, -- REFERENCES war_clash. Set when the next war preparation is started and unset when that war is undone.
  	UNIQUE(organization_id, next_clash_id, remove_event_id)
 );
@@ -44,7 +44,7 @@ CREATE TABLE war_battle (
 	add_event_id 				BIGINT PRIMARY KEY, -- battle_id  -- REFERENCES war_event
 	remove_event_id 			BIGINT DEFAULT NULL, -- REFERENCES war_event
 	clash_id		 			BIGINT NOT NULL REFERENCES war_clash ON DELETE CASCADE,
-	UNIQUE(clash_id, remove_event_id)
+	UNIQUE(clash_id, remove_event_id),
 
 	current_end_id				BIGINT DEFAULT NULL -- REFERENCES war_end. Set when a end war event is added, and unset when that end event is undone.
 );
@@ -70,6 +70,7 @@ CREATE TABLE war_reservation (
 	add_event_id				BIGINT PRIMARY KEY, -- war_reservation_id -- REFERENCES war_event
 	remove_event_id				BIGINT DEFAULT NULL, -- REFERENCES war_event
 
+	clash_id		 			BIGINT NOT NULL REFERENCES war_clash ON DELETE CASCADE,
 	participant_id		 		INTEGER NOT NULL REFERENCES war_participant ON DELETE CASCADE,
 	target_position 			SMALLINT NOT NULL,
 	UNIQUE(participant_id, target_position, remove_event_id)
@@ -100,7 +101,7 @@ CREATE TABLE war_fight (
 	suwe						INTEGER NOT NULL, -- seconds until war end.
 	stars 						SMALLINT NOT NULL, -- number of achieved stars
 	destruction 				SMALLINT NOT NULL, -- % of destruction
-	UNIQUE(battle_id, participant_id, opponent_position, kind, remove_event_id)
+	UNIQUE(battle_id, participant_position, opponent_position, kind, remove_event_id)
 );
 
 CREATE TABLE war_plan (

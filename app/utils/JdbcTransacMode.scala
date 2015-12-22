@@ -47,7 +47,7 @@ class OutJdbcTransacMode(dataSource: DataSource) extends JdbcTransacMode with Ou
 
   override def inConnection[X](block: Connection => X): Transition[JdbcTransacMode, X] = Transition[JdbcTransacMode, X] { jdbcTransacMode =>
     val connection = jdbcTransacMode.asInstanceOf[OutJdbcTransacMode].getConnection()
-    assert(!connection.getAutoCommit)
+    assert(connection.getAutoCommit)
     try {
       TransitionResult(jdbcTransacMode, block(connection))
     } finally {

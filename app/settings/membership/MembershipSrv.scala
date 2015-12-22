@@ -21,6 +21,14 @@ import war.central.AddDefenseCmd
 import war.central.AddGuessCmd
 import war.central.StartBattleCmd
 import war.central.EndWarCmd
+import war.central.UndoCmd
+import war.central.WarEvent
+import war.central.StartBattleEvent
+import war.central.EndWarEvent
+import war.central.AddParticipantEvent
+import war.central.AddAttackEvent
+import war.central.AddDefenseEvent
+import war.central.AddGuessEvent
 
 object Role {
   type Code = Char
@@ -33,6 +41,7 @@ trait Role {
   val canRejectJoinRequests: Boolean
   val canJoinDirectly: Boolean
   def canDo(cmd: Command, actorIcon: Icon): Boolean
+  def canUndo(event: WarEvent, actorIcon: Icon): Boolean
   val code: Role.Code
   def toJson = JsString(code.toString())
 }
@@ -42,6 +51,7 @@ case object Leader extends Role {
   override val canRejectJoinRequests = true
   override val canJoinDirectly = true
   override def canDo(cmd: Command, actorIcon: Icon): Boolean = Coleader.canDo(cmd, actorIcon)
+  override def canUndo(eventToUndo: WarEvent, actorIcon: Icon): Boolean = Coleader.canUndo(eventToUndo, actorIcon)
   override val code = 'L'
 }
 case object Coleader extends Role {
@@ -49,10 +59,14 @@ case object Coleader extends Role {
   override val canRejectJoinRequests = true
   override val canJoinDirectly = true
   override def canDo(cmd: Command, actorIcon: Icon): Boolean = Veteran.canDo(cmd, actorIcon) || (cmd match {
-    case _: AddParticipantCmd => true
-    case _: StartBattleCmd    => true
-    case _: EndWarCmd         => true
-    case _                    => false
+    case _: StartBattleCmd => true
+    case _: EndWarCmd      => true
+    case _                 => false
+  })
+  override def canUndo(eventToUndo: WarEvent, actorIcon: Icon): Boolean = Veteran.canUndo(eventToUndo, actorIcon) || (eventToUndo match {
+    case _: StartBattleEvent => true
+    case _: EndWarEvent      => true
+    case _                   => false
   })
   override val code = 'C'
 }
@@ -66,6 +80,12 @@ case object Veteran extends Role {
     case _: AddDefenseCmd     => true
     case _                    => false
   })
+  override def canUndo(eventToUndo: WarEvent, actorIcon: Icon): Boolean = Novice.canUndo(eventToUndo, actorIcon) || (eventToUndo match {
+    case _: AddParticipantEvent => true
+    case _: AddAttackEvent      => true
+    case _: AddDefenseEvent     => true
+    case _                      => false
+  })
   override val code = 'V'
 }
 case object Novice extends Role {
@@ -73,9 +93,15 @@ case object Novice extends Role {
   override val canRejectJoinRequests = false
   override val canJoinDirectly = false
   override def canDo(cmd: Command, actorIcon: Icon): Boolean = cmd match {
-    case ap: AddParticipantCmd => ap.iconTag == actorIcon.tag
+    case ap: AddParticipantCmd => ap.iconTag == actorIcon.tag // can add only himself
     case _: AddGuessCmd        => true
+    case _: UndoCmd            => true
     case _                     => false
+  }
+  override def canUndo(eventToUndo: WarEvent, actorIcon: Icon): Boolean = eventToUndo match {
+    case ap: AddParticipantEvent => ap.iconName == actorIcon.name // can remove only himself
+    case _: AddGuessEvent        => true
+    case _                       => false
   }
   override val code = 'N'
 }

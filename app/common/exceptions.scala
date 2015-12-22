@@ -9,6 +9,11 @@ class AlreadyExistException(message:String, cause:Throwable = null) extends Exce
   val stateCode = Status.CONFLICT
 }
 
+/**Thrown when the phase state of the client and the server are of the same type, but a different instance. */
+class OutdatedStateException(message:String="Your last operation was canceled because your client was in an updated state") extends Exception(message) with WithHttpState {
+  val stateCode = Status.CONFLICT
+}
+
 /**Thrown when a player tries to operate on a organisation he don't belongs to (almost sure malicious attack) */
 class OwnershipFailedException(message:String = "You don't belong to that organisation") extends Exception(message) with WithHttpState {
 	def this() = this("Possible malicious attack") 
@@ -28,3 +33,4 @@ class StoppedToExistException(message:String) extends Exception(message) with Wi
 class NotFoundException(message:String="You are not part of any organisation") extends Exception(message) with WithHttpState {
   val stateCode = Status.NOT_FOUND
 }
+

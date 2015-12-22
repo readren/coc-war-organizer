@@ -15,6 +15,7 @@ import play.api.mvc.Action
 import settings.account.Account
 import settings.membership.Icon
 import utils.TransacTransitionExec
+import utils.TransactionalTransition._
 import utils.executionContexts.dbWriteOperations
 import utils.executionContexts.default
 import settings.membership.IconDto

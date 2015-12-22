@@ -8,11 +8,14 @@ import scala.language.implicitConversions
 case class TransitionResult[+S, +A](state: S, product: A)
 
 /**
- * This class is a tool that helps to factor out and postpone all effectful operations. This allows to make all the business be pure (referentially transparent), and the side effect be isolated.
- * @param run is the operation that this transition performs. It receives an arbitrary state and gives the next state and a product, which uses to be the the goal of the transition.
+ * This class is a tool that helps to factor out and postpone all effectful operations. This allows to make all the business operations be pure (referentially transparent), and the side effect be isolated.
+ * 
+ * It is monadic on type parameter `A` because a `def transitionMonad[S]: Monad[({ type M[A] = Transition[S, A] })#M]` can be defined. 
+ * @param run is the operation that this instance holds. It receives an arbitrary state and gives the next state and a product, which uses to be the the goal of the transition.
  */
 case class Transition[S, +A](run: S => TransitionResult[S, A]) {
   self =>
+    
   def map[B](f: A => B) = Transition[S, B](s1 => {
     val TransitionResult(s2, a) = run(s1)
     TransitionResult(s2, f(a))
@@ -23,10 +26,11 @@ case class Transition[S, +A](run: S => TransitionResult[S, A]) {
     g(a).run(s2)
   })
 
-  def map2[B, C](s: Transition[S, B])(f: (A, B) => C): Transition[S, C] = {
-    flatMap[C](a => s.map(b => f(a, b)))
+  def map2[B, C](tb: Transition[S, B])(f: (A, B) => C) = Transition[S, C] { s1 =>
+    val TransitionResult(s2, a) = run(s1)
+    val TransitionResult(s3, b) = tb.run(s2)
+    TransitionResult(s3, f(a, b))
   }
-
 }
 
 object Transition {
@@ -65,6 +69,7 @@ object Transition {
     }
   }
 
+  implicit def toTransition[S, A](a: A): Transition[S, A] = Transition.unit(a)
   implicit def toTransitionTry[S, A](t: Transition[S, Try[A]]): TransitionTry[S, A] = TransitionTry(t.run(_))
   implicit def toSuccessfulTransitionTry[S, A](t: Transition[S, A]): TransitionTry[S, A] = TransitionTry(t.map(Success(_)).run(_))
 }

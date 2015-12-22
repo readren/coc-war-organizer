@@ -11,6 +11,7 @@ import play.api.libs.json.Writes
 import settings.account.AccountSrv
 import utils.TransacMode
 import utils.TransacTransitionExec
+import utils.TransactionalTransition._
 import utils.Transition
 import utils.executionContexts.simpleDbLookups
 import settings.account.Account
@@ -67,7 +68,7 @@ trait LogSrv {
 }
 
 
-class LogCtrl @Inject() (implicit val env: Environment[User, JWTAuthenticator], val tte: TransacTransitionExec, logSrv: LogSrv)
+class LogCtrl @Inject() (implicit val env: Environment[User, JWTAuthenticator], logSrv: LogSrv, val tte:TransacTransitionExec)
 	extends Silhouette[User, JWTAuthenticator] with TypicalActions[JWTAuthenticator] {
 
 	def getLogInitState = typicalAction(simpleDbLookups, logSrv.getLogInitState _)(getLogInitStateCmdReads, getLogInitStateDtoWrites)

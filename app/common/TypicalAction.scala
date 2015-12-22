@@ -8,9 +8,9 @@ import play.api.libs.json.Reads
 import play.api.libs.json.Writes
 import play.api.mvc.Action
 import auth.models.User
-import common.typeAliases.TiTac
 import settings.account.Account
 import utils.TransacTransitionExec
+import utils.TransactionalTransition._
 import utils.executionContexts.dbWriteOperations
 import utils.executionContexts.default
 import scala.concurrent.ExecutionContext

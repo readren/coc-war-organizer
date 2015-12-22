@@ -21,12 +21,5 @@ object typeAliases {
   val ATTACK = true
   val DEFENSE = false
 
-  type TiTac[X] = Transition[TransacMode, X]
-  type TiOutTac[X] = Transition[OutTransacMode, X]
-  type TiInTac[X] = Transition[InTransacMode, X]
-  
-  type TtTm[X] = TransitionTry[TransacMode, X]
-  type TtOutTm[X] = TransitionTry[OutTransacMode, X]
-  type TtInTm[X] = TransitionTry[InTransacMode, X]
 
 }

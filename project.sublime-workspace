@@ -93,7 +93,7 @@
 		},
 		{
 			"contents": "#Evolutions\n\n# --- !Ups\n\nCREATE TYPE role_code AS ENUM ('L', 'C', 'V', 'N');\n\nCREATE TABLE orga_account (\n	user_id 			UUID NOT NULL REFERENCES auth_user  ON DELETE CASCADE,\n	tag					SMALLSERIAL,\n	PRIMARY KEY (user_id, tag),\n	\n	name				TEXT NOT NULL,\n	UNIQUE (user_id, name),\n	\n	description			TEXT\n);\n\nCREATE TABLE orga_event (\n	id					BIGSERIAL PRIMARY KEY,\n	instant				TIMESTAMP NOT NULL DEFAULT localtimestamp,\n	med_fk1				INTEGER DEFAULT NULL,\n	med_fk2				INTEGER DEFAULT NULL,\n	-- big_fk				BIGINT DEFAULT NULL,\n	user_id				UUID DEFAULT NULL\n);\nCREATE INDEX orga_event_instant_index ON orga_even(instant); -- TODO do a uniqueTimestamp function to avoid the necesity of the BIGSERIAL and let the instant be the primary key.\n\nCREATE TABLE orga_organization ( \n	id					SERIAL PRIMARY KEY,\n	clan_name			TEXT NOT NULL,\n	clan_tag			TEXT NOT NULL,\n	description			TEXT DEFAULT NULL,\n	UNIQUE( clan_tag, clan_name, description)\n);\n\n-- Represents a member icon. Member icons are owned by the organization, but can only be used by the account for which it was created. If an account that has left the organization joins back, he uses the same member icon he had used before. \nCREATE TABLE orga_icon (\n	organization_id			INTEGER NOT NULL  REFERENCES orga_organization  ON DELETE CASCADE,\n	tag						SERIAL,\n	PRIMARY KEY (organization_id, tag),\n	\n	name					TEXT NOT NULL,\n	present_role			role_code NOT NULL,\n	\n	holder_user_id			UUID,	-- remembers who is/was the account that is using/has used this member icon in order to be used by the referenced account if he comes back\n	holder_account_tag		SMALLINT,\n	FOREIGN KEY (holder_user_id, holder_account_tag) REFERENCES orga_account  ON DELETE SET NULL,	-- the member icon remains even after the holder account is deleted\n\n	/* this is another entity that is embedded here for efficiency. The cost is that only the last role change is remembered  */\n	role_change_event_id	BIGINT DEFAULT NULL, -- REFERENCES orga_event. For efficiency sake, when this column is updated, and indexed key of this table should be copied to the referenced orga_event row (organization_id -> med_fk1, tag -> med_fk2).\n	previous_role			role_code DEFAULT NULL,\n	changer_icon_tag		INTEGER DEFAULT NULL,\n	FOREIGN KEY (organization_id, changer_icon_tag) REFERENCES orga_icon ON DELETE NO ACTION  \n);\n\n-- CREATE TABLE orga_role (\n-- 	change_event_id		BIGINT PRIMARY KEY,\n-- 	next_change			BIGINT REFERENCES orga_role ON DELETE CASCADE,\n\n-- 	organization_id		INTEGER NOT NULL REFERENCES orga_organization ON DELETE CASCADE,\n-- 	icon_tag 			INTEGER NOT NULL,\n-- 	FOREIGN KEY (organization_id, tag)\n-- );\n\n/** Represents a join request. An account can have at most one active join request. With active I mean: not canceled. */\nCREATE TABLE orga_join_request (\n	user_id				UUID NOT NULL,\n	account_tag			SMALLINT NOT NULL,\n	FOREIGN KEY (user_id, account_tag) REFERENCES orga_account  ON DELETE CASCADE,\n	request_event_id	BIGINT PRIMARY KEY, -- REFERENCES orga_event\n	UNIQUE (user_id, account_tag, cancel_event_id),\n	organization_id		INTEGER NOT NULL  REFERENCES orga_organization  ON DELETE CASCADE,\n\n\n	/* this is another entity that is embedded here for efficiency  */\n	cancel_event_id		BIGINT DEFAULT NULL, -- REFERENCES orga_event, id of the \"cancel join request\" event.  For efficiency sake, when this column is updated, and indexed key of this table should be copied to the referenced orga_event row (user_id -> user_id, account_tag -> med_fk1).\n	because_accepted	BOOLEAN DEFAULT NULL, -- tells if the request was canceled because the account was accepted or the account canceled the join request\n\n	/* this is another entity that is embedded here for efficiency  */\n	rejection_msg		TEXT DEFAULT NULL, -- the message that the rejecter has written when he rejected the join request\n	rejection_event_id	BIGINT DEFAULT NULL, -- REFERENCES orga_event -- id of the rejection event. For efficiency sake, when this column is updated, and indexed key of this table should be copied to the referenced orga_event row (user_id -> user_id, account_tag -> med_fk1).\n	rejecter_icon_tag	INTEGER DEFAULT NULL, -- tag of the member icon that rejected the join request\n	FOREIGN KEY (organization_id, rejecter_icon_tag) REFERENCES orga_icon ON DELETE CASCADE \n);\n\n/** One to one relationship between an account and its current member icon. */\nCREATE TABLE orga_membership (\n	organization_id		INTEGER NOT NULL,\n	icon_tag			INTEGER NOT NULL,\n	FOREIGN KEY (organization_id, icon_tag) REFERENCES orga_icon  ON DELETE CASCADE,\n	UNIQUE (organization_id, icon_tag, abandon_event_id),\n\n	user_id				UUID NOT NULL,\n	account_tag			SMALLINT NOT NULL,\n	FOREIGN KEY (user_id, account_tag) REFERENCES orga_account  ON DELETE CASCADE,\n	UNIQUE (user_id, account_tag, abandon_event_id),\n	\n\n	request_event_id	BIGINT NOT NULL, -- REFERENCES orga_event	-- id of the join request that was accepted\n	accepted_event_id	BIGINT PRIMARY KEY, -- REFERENCES orga_event	-- id of this join request acceptance event\n	accepter_icon_tag 	INTEGER NOT NULL,	-- tag of the member icon that accepted the join request\n	FOREIGN KEY (organization_id, accepter_icon_tag) REFERENCES orga_icon ON DELETE CASCADE, \n\n	/* this is another entity that is embedded here for efficiency  */\n	abandon_event_id	BIGINT -- REFERENCES orga_event	-- id of the \"abandon organization\" event.  For efficiency sake, when this column is updated, and indexed key of this table should be copied to the referenced orga_event row (user_id -> user_id, account_tag -> med_fk1).\n);\n\n\n# --- !Downs\n\nDROP TABLE IF EXISTS orga_membership;\nDROP TABLE IF EXISTS orga_join_request;\nDROP TABLE IF EXISTS orga_icon;\nDROP TABLE IF EXISTS orga_organization;\nDROP TABLE IF EXISTS orga_event;\nDROP TABLE IF EXISTS orga_account;\nDROP TYPE IF EXISTS role_code;\n\n\n",
-			"file": "/F/Projects/activator/coc-war-organizer/conf/evolutions/default/2.sql",
+			"file": "conf/evolutions/default/2.sql",
 			"file_size": 5683,
 			"file_write_time": 130787981913084000,
 			"settings":
@@ -103,22 +103,35 @@
 			}
 		},
 		{
-			"contents": "#Evolutions\n\n# --- !Ups\n\n\nCREATE TABLE war_event (\n	id 							BIGSERIAL PRIMARY KEY,\n	instant						TIMESTAMP NOT NULL,\n	actor_icon_name				TEXT NOT NULL,\n	foreign_key					BIGINT DEFAULT NULL\n);\nCREATE INDEX war_event_instant_index ON war_even(instant); -- TODO do a uniqueTimestamp function to avoid the necesity of the BIGSERIAL and let the instant be the primary key.\n\n\n-- CREATE TABLE war_clash (\n-- 	start_preparation_event_id 	BIGINT PRIMARY KEY, -- clash_id -- REFERENCES war_event\n-- 	start_battle_event_id		BIGINT DEFAULT NULL, -- REFERENCES war_event\n-- 	end_war_event_id			BIGINT DEFAULT NULL, -- REFERENCES war_event -- this event id coincides with the start_preparation_event_id of the immediate following clash\n\n-- 	start_preparation_orga_event_id 	BIGINT NOT NULL -- REFERENCES orga_event\n-- 	organization_id				INTEGER NOT NULL REFERENCES orga_organization  ON DELETE CASCADE,\n-- 	enemy_clan_name				TEXT,\n-- 	enemy_clan_tag				TEXT,\n-- 	UNIQUE(organization_id, end_war_event_id)\n-- );\n\nCREATE TABLE war_clash (\n	add_event_id 				BIGINT PRIMARY KEY, -- clash_id -- REFERENCES war_event\n	remove_event_id				BIGINT DEFAULT NULL, -- REFERENCES war_event\n\n	start_clash_orga_event_id 	BIGINT NOT NULL, -- REFERENCES orga_event\n	organization_id				INTEGER NOT NULL REFERENCES orga_organization  ON DELETE CASCADE,\n	enemy_clan_name				TEXT,\n	enemy_clan_tag				TEXT,\n\n	-- mutable fields: no cached query result should depend on the value of this fields. For now, only the getWarPhaseInfo query depends on them.\n	current_battle_id			BIGINT DEFAULT NULL, -- REFERENCES war_battle. Set when a start battle event is added, and unset when that battle event is undone.\n	next_clash_id				BIGINT DEFAULT NULL, -- REFERENCES war_clash. Set when the next war preparation is started and unset when that war is undone.\n 	UNIQUE(organization_id, next_clash_id, remove_event_id)\n);\n--CREATE INDEX war_clash_organization_index ON war_clash(organization_id, remove_event_id);\n\nCREATE TABLE war_battle (\n	add_event_id 				BIGINT PRIMARY KEY, -- battle_id  -- REFERENCES war_event\n	remove_event_id 			BIGINT DEFAULT NULL, -- REFERENCES war_event\n	clash_id		 			BIGINT NOT NULL REFERENCES war_clash ON DELETE CASCADE,\n	UNIQUE(clash_id, remove_event_id),\n\n	current_end_id				BIGINT DEFAULT NULL -- REFERENCES war_end. Set when a end war event is added, and unset when that end event is undone.\n);\n\nCREATE TABLE war_end (\n	add_event_id 				BIGINT PRIMARY KEY, -- end_id  -- REFERENCES war_event\n	remove_event_id 			BIGINT DEFAULT NULL, -- REFERENCES war_event\n	battle_id		 			BIGINT NOT NULL REFERENCES war_battle ON DELETE CASCADE,\n	UNIQUE(battle_id, remove_event_id)\n);\n\nCREATE TABLE war_participant (\n	add_event_id				BIGINT PRIMARY KEY, -- participant_id  -- REFERENCES war_event\n	remove_event_id				BIGINT DEFAULT NULL, -- REFERENCES war_event\n\n	clash_id		 			BIGINT NOT NULL REFERENCES war_clash ON DELETE CASCADE,\n	icon_tag					INTEGER NOT NULL,\n	base_position				SMALLINT,\n	UNIQUE(clash_id, base_position, remove_event_id)\n);\n\nCREATE TABLE war_reservation (\n	add_event_id				BIGINT PRIMARY KEY, -- war_reservation_id -- REFERENCES war_event\n	remove_event_id				BIGINT DEFAULT NULL, -- REFERENCES war_event\n\n	clash_id		 			BIGINT NOT NULL REFERENCES war_clash ON DELETE CASCADE,\n	participant_id		 		INTEGER NOT NULL REFERENCES war_participant ON DELETE CASCADE,\n	target_position 			SMALLINT NOT NULL,\n	UNIQUE(participant_id, target_position, remove_event_id)\n);\n\nCREATE TABLE war_guess (\n	add_event_id				BIGINT PRIMARY KEY, -- war_guess_id -- REFERENCES war_event\n	remove_event_id				BIGINT DEFAULT NULL, -- REFERENCES war_event\n\n	clash_id					BIGINT NOT NULL REFERENCES war_clash ON DELETE CASCADE,\n	guesser_member_tag			INTEGER NOT NULL,\n	judged_participant_id		BIGINT NOT NULL REFERENCES war_participant ON DELETE CASCADE,\n	target_position				SMALLINT NOT NULL,\n	one_star_forecast			SMALLINT NOT NULL, -- guesstimate of one star\n	two_stars_forecast			SMALLINT NOT NULL, -- guesstimate of two stars\n	three_stars_forecast		SMALLINT NOT NULL, -- guesstimate of thres stars\n	UNIQUE(clash_id, guesser_member_tag, judged_participant_id, target_position, remove_event_id)\n);\n\nCREATE TABLE war_fight (\n	add_event_id				BIGINT PRIMARY KEY, -- war_fight_id -- REFERENCES war_event\n	remove_event_id				BIGINT DEFAULT NULL, -- REFERENCES war_event\n\n	battle_id					BIGINT NOT NULL REFERENCES war_clash ON DELETE CASCADE,\n	participant_position		SMALLINT NOT NULL,\n	opponent_position 			SMALLINT NOT NULL,\n	kind						BOOLEAN NOT NULL, -- true - > attack , false - > defense\n	suwe						INTEGER NOT NULL, -- seconds until war end.\n	stars 						SMALLINT NOT NULL, -- number of achieved stars\n	destruction 				SMALLINT NOT NULL, -- % of destruction\n	UNIQUE(battle_id, participant_id, opponent_position, kind, remove_event_id)\n);\n\nCREATE TABLE war_plan (\n	add_event_id				BIGINT PRIMARY KEY, -- war_plan_id -- REFERENCES war_event\n	remove_event_id				BIGINT DEFAULT NULL, -- REFERENCES war_event\n\n	clash_id					BIGINT NOT NULL REFERENCES war_clash ON DELETE CASCADE,\n	participant_id 				BIGINT NOT NULL REFERENCES war_participant ON DELETE CASCADE,\n	target_position				SMALLINT,\n	attack_number				SMALLINT,\n	UNIQUE(clash_id, participant_id, target_position, remove_event_id)\n);\n\nCREATE TABLE war_queue (\n	add_event_id				BIGINT PRIMARY KEY, -- war_queue_id -- REFERENCES war_event\n	remove_event_id				BIGINT DEFAULT NULL, -- REFERENCES war_event\n\n	clash_id					BIGINT REFERENCES war_clash ON DELETE CASCADE,\n	target_position				SMALLINT,\n	scheddule					INTEGER[], -- each item indicates the time (in seconds until war end) after which the member whose position is equal to the index is allowed to attack. \n\n	UNIQUE(clash_id, target_position, remove_event_id)\n);\n\n\n# --- !Downs\n\nDROP TABLE IF EXISTS war_queue;\nDROP TABLE IF EXISTS war_plan;\nDROP TABLE IF EXISTS war_fight;\nDROP TABLE IF EXISTS war_guess;\nDROP TABLE IF EXISTS war_reservation;\nDROP TABLE IF EXISTS war_participant;\nDROP TABLE IF EXISTS war_end;\nDROP TABLE IF EXISTS war_battle;\nDROP TABLE IF EXISTS war_clash;\nDROP INDEX IF EXISTS war_event_instant_index;\nDROP TABLE IF EXISTS war_event;\n\n\n",
 			"file": "conf/evolutions/default/3.sql",
-			"file_size": 6202,
-			"file_write_time": 130820007454499034,
 			"settings":
 			{
-				"buffer_size": 6133,
+				"buffer_size": 6140,
 				"line_ending": "Windows"
 			}
 		},
 		{
-			"file": "/C/Users/Gustavo/Downloads/theme-11461.xml",
+			"contents": "\"use strict\";\nangular.module(\"testerUiApp\", [\"ngRoute\"]).config([\"$routeProvider\", function (a) {\n	a.when(\"/actualizadorHorario\", {\n		templateUrl: \"views/actualizadorHorario.html\"\n	}).when(\"/brindador\", {\n		templateUrl: \"views/brindador.html\"\n	}).when(\"/about\", {\n		templateUrl: \"views/about.html\",\n		controller: \"aboutCtrl\"\n	}).when(\"/actualizadorDiario\", {\n		templateUrl: \"views/actualizadorDiario.html\"\n	}).when(\"/actualizadorAlertas\", {\n		templateUrl: \"views/actualizadorAlertas.html\",\n		controller: \"actualizadorAlertasCtrl\"\n	}).when(\"/actualizadorSolYLuna\", {\n		templateUrl: \"views/actualizadorSolYLuna.html\",\n		controller: \"actualizadorSolYLunaCtrl\"\n	}).otherwise({\n		redirectTo: \"/about\"\n	})\n}]), angular.module(\"testerUiApp\").controller(\"actualizadorAlertasCtrl\", [\"$scope\", \"alertasSrv\", function (a, b) {\n	var c = this;\n	c.items = b.alertas, c.agregarVacio = function () {\n		b.agregar(b.crearNuevo())\n	}, c.duplicar = function (a) {\n		b.agregar(a.duplicado())\n	}, c.borrar = function (a) {\n		b.borrar(a)\n	}, c.generar = function (a) {\n		b.generar(a)\n	}, c.limpiar = function () {\n		b.limpiar()\n	}, c.progreso = {}, c.enviar = function () {\n		c.progreso = b.enviar()\n	}, a.$on(\"$destroy\", function () {\n		b.persistir()\n	})\n}]), angular.module(\"testerUiApp\").controller(\"actualizadorDiarioCtrl\", [\"$scope\", \"envioSrv\", function (a, b) {\n	var c = this;\n	c.items = b.envios, c.agregarVacio = function () {\n		b.agregar(b.crearNuevo())\n	}, c.duplicar = function (a) {\n		b.agregar(a.duplicado())\n	}, c.borrar = function (a) {\n		b.borrar(a)\n	}, c.generar = function () {\n		b.generar()\n	}, c.limpiar = function () {\n		b.limpiar()\n	}, c.progreso = {}, c.enviar = function () {\n		c.progreso = b.enviar()\n	}, a.$on(\"$destroy\", function () {\n		b.persistir()\n	})\n}]), angular.module(\"testerUiApp\").controller(\"actualizadorHorarioCtrl\", [\"$scope\", \"entregaSrv\", function (a, b) {\n	var c, d, e = this;\n	e.prj = b.crearNueva(), e.items = b.entregas, e.proceder = function () {\n		\"agregando\" === c ? b.agregar(e.prj) : \"editando\" === c && angular.extend(d, e.prj), e.prj = b.crearNueva(), c = void 0, e.hideForm()\n	}, e.agregar = function () {\n		c = \"agregando\", e.showForm()\n	}, e.editar = function (a) {\n		e.prj = angular.copy(a), d = a, c = \"editando\", e.showForm()\n	}, e.duplicar = function (a) {\n		e.prj = angular.copy(a), c = \"agregando\", e.showForm()\n	}, e.borrar = function (a) {\n		b.borrar(a)\n	}, e.generar = function () {\n		b.generar()\n	}, e.limpiar = function () {\n		b.limpiar()\n	}, e.showForm = void 0, e.hideForm = void 0, e.progreso = {}, e.enviar = function () {\n		e.progreso = b.enviar()\n	}, a.$on(\"$destroy\", function () {\n		b.persistir()\n	})\n}]), angular.module(\"testerUiApp\").controller(\"actualizadorSolYLunaCtrl\", [\"$scope\", \"solYLunaSrv\", function (a, b) {\n	var c = this;\n	c.items = b.items, c.agregarVacio = function () {\n		b.agregar(b.crearNuevo())\n	}, c.duplicar = function (a) {\n		b.agregar(a.duplicado())\n	}, c.borrar = function (a) {\n		b.borrar(a)\n	}, c.generar = function (a) {\n		b.generar(a)\n	}, c.limpiar = function () {\n		b.limpiar()\n	}, c.progreso = {}, c.enviar = function () {\n		c.progreso = b.enviar()\n	}, a.$on(\"$destroy\", function () {\n		b.persistir()\n	})\n}]), angular.module(\"testerUiApp\").controller(\"aboutCtrl\", [\"$scope\", function (a) {\n	a.awesomeThings = [\"HTML5 Boilerplate\", \"AngularJS\", \"Karma\"]\n}]), angular.module(\"testerUiApp\").controller(\"brindadorCtrl\", [\"consultaSrv\", \"$timeout\", \"$scope\", function (a, b, c) {\n	var d = this,\n		e = function (a) {\n			this.consulta = a, this.borrarLocalidad = function (a) {\n				this.consulta.borrarLocalidad(a), 0 === this.consulta.localidades.length && this.ocultarEditorLocalidades()\n			}, this.abrirEditorLocalidades = function () {\n				0 === this.consulta.localidades.length && this.consulta.agregarLocalidadVacia(), this.mostrarEditorLocalidades()\n			}, this.mostrarEditorLocalidades = void 0, this.ocultarEditorLocalidades = void 0\n		};\n	d.consultas = a.consultas, d.nuevoCtrl = function (a) {\n		return new e(a)\n	}, d.agregarVacia = function () {\n		a.agregar(a.crearVacia())\n	}, d.duplicar = function (b) {\n		a.agregar(b.duplicada())\n	}, d.borrar = function (b) {\n		a.borrar(b)\n	}, d.enviar = function (b) {\n		a.enviar(b)\n	}, d.onLocalidadInputElemCreado = function (a) {\n		b(function () {\n			a[0].focus(), a[0].select()\n		})\n	}, d.mostrarVisorRespuesta = void 0, d.verRespuesta = function (a, b) {\n		d.consultaElegida = a, d.mostrarVisorRespuesta(b)\n	}, d.manejadorEventosVisorRespuesta = function (a, b, c, d) {\n		if (a) {\n			var e = b.target.getBoundingClientRect(),\n				f = c[0].getBoundingClientRect();\n			d.css(\"top\", (e.bottom - f.top).toString() + \"px\")\n		}\n	}, d.generar = function (b) {\n		a.generar(b)\n	}, d.limpiar = function () {\n		a.limpiar()\n	}, d.enviarTodas = function () {\n		a.enviarTodas()\n	}, c.$on(\"$destroy\", function () {\n		a.persistir()\n	})\n}]), angular.module(\"testerUiApp\").factory(\"alertasSrv\", [\"$window\", \"$http\", \"utilSrv\", \"$sce\", function (a, b, c, d) {\n	var e = function () {\n		this.idAlert = void 0, this.nReport = void 0, this.type = void 0, this.title = void 0, this.status = void 0, this.date = void 0, this.hour = void 0, this.description = void 0, this.zones = void 0, this.severity = void 0, this.polygon = void 0, this.urls = void 0, this.region_topes_nubosos = void 0, this.partial = void 0, this.update = void 0\n	};\n	return e.prototype.duplicado = function () {\n		return angular.copy(this)\n	}, {\n		alertas: angular.fromJson(a.localStorage.getItem(\"alertas\")) || [],\n		crearNuevo: function () {\n			return new e\n		},\n		agregar: function (a) {\n			this.alertas.push(a)\n		},\n		borrar: function (a) {\n			this.alertas.splice(this.alertas.indexOf(a), 1)\n		},\n		persistir: function () {\n			a.localStorage.setItem(\"alertas\", angular.toJson(this.alertas.filter(function (a, b) {\n				return 20 > b\n			})))\n		},\n		enviar: function () {\n			var a = {\n				estadoEnvio: \"esperando\"\n			};\n			return b.post(\"/smn/actualizar_alertas\", this.alertas).success(function (b, c) {\n				a.estadoEnvio = \"recibido\", a.respuesta = {\n					exitoso: !0,\n					status: c,\n					data: b\n				}\n			}).error(function (b, c, e) {\n				var f = e(\"Content-type\").search(\"text/html\") >= 0;\n				a.estadoEnvio = \"recibido\", a.respuesta = {\n					exitoso: !1,\n					status: c,\n					dataHtml: f ? d.trustAsHtml(b) : \"\",\n					data: f ? \"\" : b\n				}\n			}), a\n		},\n		generar: function (a) {\n			for (var b = this, d = new Date, f = 0; a > f; ++f) {\n				var g = new e;\n				g.idAlert = f + 1, g.nReport = c.randomRange(1, 9), g.type = c.randomElement([\"AL\", \"PE\", \"IE\", \"AC\"]), g.title = c.randomElement([\"Por nevadas intensas\", \"Por lluvia torrencial\", \"Por vientos huracanados\", \"Por riesgo de avalancha\", \"Por truenos y centellas\", \"Por inundación inminente\", \"Por radiación excesiva\"]), g.status = c.randomElement([\"Aviso\", \"Cese\"]);\n				var h = c.sumaHoras(d, c.randomRange(1, 72));\n				g.date = c.fechaATexto(h), g.hour = c.horaATexto(h), g.description = g.title + \"... mas descripcion detallada...\", g.zones = {};\n				for (var i = c.randomRange(1, 5), j = 0; i > j; ++j) {\n					var k = c.randomElement([\"Norte\", \"Sur\", \"Este\", \"Oeste\"]),\n						l = c.randomElement([\"Salta\", \"Jujuy\", \"Mendoza\", \"Buenos Aires\", \"Capital\", \"Río negro\", \"Neuquén\", \"Santa Fe\", \"Entre ríos\", \"Corrientes\", \"La pampa\", \"Misiones\", \"Formosa\"]);\n					g.zones[0] = k + \" de \" + l\n				}\n				g.severity = c.randomElement([\"R\", \"N\", \"A\", \"V\"]), g.polygon = \"\";\n				for (var m = \"\", n = c.randomRange(3, 7), o = 0; n > o; ++o) {\n					var p = c.randomRange(-510, -220) / 10,\n						q = c.randomRange(-700, -570) / 10;\n					g.polygon += m + \"[\" + q + \",\" + p + \"]\", m = \",\"\n				}\n				\"AC\" === g.type ? g.urls = [{\n					value: \"www.smn.gov.ar/pronosticos/avisomet/datos_aviso/bMsIFqYw6nHLVSO/avi_gral.gif\",\n					description: \"gmp_general\"\n				}, {\n					value: \"www.smn.gov.ar/pronosticos/avisomet/datos_aviso/bMsIFqYw6nHLVSO/aviso.gif\",\n					description: \"gmp_ezeiza\"\n				}, {\n					value: null,\n					description: \"cmax_240_ezeiza\"\n				}, {\n					value: \"http://www.smn.gov.ar/radar/CMAX_PER_Z_1_01.gif\",\n					description: \"gmp_pergamino\"\n				}, {\n					value: null,\n					description: \"gmp_parana\"\n				}, {\n					description: \"gmp_anguil\",\n					value: null\n				}, {\n					value: \"http://www.smn.gov.ar/vmsr/imagenes/argentinasectorizada/inf/sc/_topcentro150917.0238.jpg\",\n					description: \"topes_nubosos\"\n				}] : g.urls = null, g.region_topes_nubosos = c.randomElement(\"Sector norte\", \"Sector sur\", \"sector este\", \"sector oeste\", null), g.partial = c.randomElement(\"Y\", null, \"N\");\n				var r = c.sumaHoras(h, c.randomRange(1, 12));\n				g.update = \"AC\" === g.type ? \"\" : c.fechaHoraATexto(r).substring(9), b.alertas.push(g)\n			}\n		},\n		limpiar: function () {\n			this.alertas.splice(0, this.alertas.length)\n		}\n	}\n}]), angular.module(\"testerUiApp\").factory(\"consultaSrv\", [\"$http\", \"$window\", \"utilSrv\", function (a, b, c) {\n	var d = function (a) {\n			this.lid = a\n		},\n		e = function (a, b, c) {\n			this.latitud = a, this.longitud = b, this.localidades = c, this.respuesta = void 0\n		};\n	e.prototype = {\n		borrarLocalidad: function (a) {\n			this.localidades.splice(this.localidades.indexOf(a), 1)\n		},\n		agregarLocalidadVacia: function () {\n			this.localidades.push(new d(0))\n		},\n		localidadesATexto: function () {\n			for (var a = \"\", b = 0; b < this.localidades.length; b++) a = a + \" \" + this.localidades[b].lid;\n			return a\n		},\n		duplicada: function () {\n			var a = angular.copy(this);\n			return a.respuesta = void 0, a\n		}\n	};\n	var f = angular.fromJson(b.localStorage.getItem(\"consultas\")) || [],\n		g = [];\n	return angular.forEach(f, function (a) {\n		g.push(new e(a.latitud, a.longitud, a.localidades))\n	}), {\n		consultas: g,\n		crearVacia: function () {\n			return new e(\"\", \"\", [])\n		},\n		agregar: function (a) {\n			this.consultas.push(a)\n		},\n		borrar: function (a) {\n			this.consultas.splice(this.consultas.indexOf(a), 1)\n		},\n		enviar: function (b) {\n			var d = {\n					esperando: !0\n				},\n				e = new Date;\n			b.respuesta = d;\n			var f = {\n				co: b.longitud.toString() + \",\" + b.latitud.toString()\n			};\n			return 0 !== b.localidades.length && (f.loc_info = b.localidades), a.post(\"/smn_mobile/obtener_pronostico\", f).success(function (a, b) {\n				d.esperando = !1, d.exito = !0, d.data = a, d.status = b, d.demora = c.restaFechas(new Date, e)\n			}).error(function (a, b) {\n				d.esperando = !1, d.exito = !1, d.data = a, d.status = b, d.demora = c.restaFechas(new Date, e)\n			})\n		},\n		enviarTodas: function () {\n			angular.forEach(this.consultas, this.enviar)\n		},\n		generar: function (a) {\n			for (; --a >= 0;) {\n				for (var b = new Array, f = c.randomRange(0, 3); --f >= 0;) b.push(new d(c.randomRange(1, 100)));\n				var h = new e(c.randomRange(-51, -22), c.randomRange(-70, -57), b);\n				g.push(h)\n			}\n		},\n		limpiar: function () {\n			this.consultas.splice(0, g.length)\n		},\n		persistir: function () {\n			b.localStorage.setItem(\"consultas\", angular.toJson(g.filter(function (a, b) {\n				return 10 > b\n			})))\n		}\n	}\n}]), angular.module(\"testerUiApp\").factory(\"entregaSrv\", [\"$window\", \"$http\", \"utilSrv\", \"$sce\", function (a, b, c, d) {\n	return {\n		entregas: angular.fromJson(a.localStorage.getItem(\"entregas\")) || [],\n		crearNueva: function () {\n			var a = new Date;\n			return {\n				fecha: c.fechaATexto(a),\n				hora: a.getHours()\n			}\n		},\n		agregar: function (a) {\n			this.entregas.push(a)\n		},\n		borrar: function (a) {\n			this.entregas.splice(this.entregas.indexOf(a), 1)\n		},\n		persistir: function () {\n			a.localStorage.setItem(\"entregas\", angular.toJson(this.entregas.filter(function (a, b) {\n				return 20 > b\n			})))\n		},\n		enviar: function () {\n			var a = {\n				estadoEnvio: \"esperando\"\n			};\n			return b.post(\"/smn/actualizar_estado_actual\", this.entregas).success(function (b, c) {\n				a.estadoEnvio = \"recibido\", a.respuesta = {\n					exitoso: !0,\n					status: c,\n					data: b\n				}\n			}).error(function (b, c, e) {\n				var f = e(\"Content-type\").search(\"text/html\") >= 0;\n				a.estadoEnvio = \"recibido\", a.respuesta = {\n					exitoso: !1,\n					status: c,\n					dataHtml: f ? d.trustAsHtml(b) : \"\",\n					data: f ? \"\" : b\n				}\n			}), a\n		},\n		generar: function () {\n			for (var a = this, b = [87736, 87784, 87761, 87791, 87774, 87715, 87765, 87719], d = new Date, e = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0), f = 0; 72 > f; f++) angular.forEach(b, function (b) {\n				var d = c.randomElement([\"Calma\", \"Norte\", \"Sur\", \"Este\", \"Oeste\", \"Noreste\", \"Sureste\", \"Noroeste\", \"Suroeste\"]),\n					g = {\n						int_number: b,\n						date: c.fechaATexto(c.sumaHoras(e, f)),\n						hour: c.pad(f % 24, 2) + \":00\",\n						temperature: c.redondear(.1 * c.randomRange(-50, 450), 1),\n						st: c.redondear(.1 * c.randomRange(-50, 450), 1),\n						weather: c.randomElement([\"parcialmente nublado\", \"soleado\", \"lluvioso\"]),\n						weather_id: c.randomRange(1, 6),\n						humidity: c.randomRange(0, 101),\n						visibility: c.randomRange(0, 10),\n						wind_direction: d,\n						wind_speed: \"Calma\" === d ? null : c.randomRange(1, 20),\n						pressure: 1e3 + c.randomRange(-20, 100)\n					};\n				a.entregas.push(g)\n			})\n		},\n		limpiar: function () {\n			this.entregas.splice(0, this.entregas.length)\n		}\n	}\n}]), angular.module(\"testerUiApp\").factory(\"envioSrv\", [\"utilSrv\", \"$window\", \"$http\", \"$sce\", function (a, b, c, d) {\n	var e = function () {\n			this.weather_id = void 0, this.description = void 0\n		},\n		f = function () {\n			this.date = void 0, this.temp_min = void 0, this.temp_max = void 0, this.temp_sub = void 0, this.temp_noc = void 0, this.radiation = void 0, this.morning = new e, this.afternoon = new e\n		},\n		g = function () {\n			var b = new Date;\n			this.timestamp = b.getTime(), this.date_time = a.fechaHoraATexto(b), this.location_id = void 0, this.forecast = {\n				0: new f,\n				1: new f,\n				2: new f,\n				3: new f\n			}\n		};\n	return g.prototype.duplicado = function () {\n		return angular.copy(this)\n	}, {\n		envios: angular.fromJson(b.localStorage.getItem(\"envios\")) || [],\n		crearNuevo: function () {\n			return new g\n		},\n		agregar: function (a) {\n			this.envios.push(a)\n		},\n		borrar: function (a) {\n			this.envios.splice(this.envios.indexOf(a), 1)\n		},\n		persistir: function () {\n			b.localStorage.setItem(\"envios\", angular.toJson(this.envios.filter(function (a, b) {\n				return 20 > b\n			})))\n		},\n		enviar: function () {\n			var a = {\n				estadoEnvio: \"esperando\"\n			};\n			return c.post(\"/smn/actualizar_pronostico\", this.envios).success(function (b, c) {\n				a.estadoEnvio = \"recibido\", a.respuesta = {\n					exitoso: !0,\n					status: c,\n					data: b\n				}\n			}).error(function (b, c, e) {\n				var f = e(\"Content-type\").search(\"text/html\") >= 0;\n				a.estadoEnvio = \"recibido\", a.respuesta = {\n					exitoso: !1,\n					status: c,\n					dataHtml: f ? d.trustAsHtml(b) : \"\",\n					data: f ? \"\" : b\n				}\n			}), a\n		},\n		generar: function () {\n			var b = this,\n				c = [19, 29, 30, 47, 60, 117, 132, 137, 169, 4547, 8866, 9903, 9933, 9949];\n			angular.forEach(c, function (c) {\n				var d = new g;\n				d.location_id = c;\n				for (var e = 0; 4 > e; e++) {\n					var f = d.forecast[e],\n						h = a.randomRange(-50, 450),\n						i = a.randomRange(h, 450);\n					f.date = a.fechaATexto(new Date(d.timestamp + 24 * e * 60 * 60 * 1e3)), 0 == e && new Date(d.timestamp).getHours() > 12 ? (f.temp_min = null, f.temp_max = null) : (f.temp_min = a.redondear(.1 * h, 1), f.temp_max = a.redondear(.1 * i, 1)), f.temp_sub = a.redondear(.1 * a.randomRange(-50, 450), 1), f.temp_noc = a.redondear(.1 * a.randomRange(h, i), 1), f.radiation = a.randomElement([\"muy baja\", \"baja\", \"moderada\", \"alta\", \"muy alta\"]), f.morning.weather_id = a.randomRange(0, 21), f.morning.description = a.randomElement([\"soleado\", \"lluvioso\", \"chaparrones\", \"niebla\", \"graniso\"]), f.afternoon.weather_id = a.randomRange(0, 21), f.afternoon.description = a.randomElement([\"estrellado\", \"lluvioso\", \"chaparrones\", \"niebla\", \"graniso\"])\n				}\n				b.envios.push(d)\n			})\n		},\n		limpiar: function () {\n			this.envios.splice(0, this.envios.length)\n		}\n	}\n}]), angular.module(\"testerUiApp\").factory(\"solYLunaSrv\", [\"$window\", \"$http\", \"utilSrv\", \"$sce\", function (a, b, c, d) {\n	var e = function () {\n		this.zona = void 0, this.fecha = void 0, this.salluna = void 0, this.azsalluna = void 0, this.pueluna = void 0, this.azpueluna = void 0, this.salsol = void 0, this.azsalsol = void 0, this.puesol = void 0, this.azpuesol = void 0\n	};\n	e.prototype.duplicado = function () {\n		return angular.copy(this)\n	};\n	var f = function (a, b) {\n		var d = Math.floor(a / 100),\n			e = a % 100,\n			f = Math.floor(b / 100),\n			g = b % 100,\n			h = 60 * d + e,\n			i = c.randomRange(h, 60 * f + g);\n		return c.pad(Math.floor(i / 60), 2) + c.pad(i % 60, 2)\n	};\n	return {\n		items: angular.fromJson(a.localStorage.getItem(\"itemsSolYLuna\")) || [],\n		crearNuevo: function () {\n			return new e\n		},\n		agregar: function (a) {\n			this.items.push(a)\n		},\n		borrar: function (a) {\n			this.items.splice(this.items.indexOf(a), 1)\n		},\n		persistir: function () {\n			a.localStorage.setItem(\"itemsSolYLuna\", angular.toJson(this.items.filter(function (a, b) {\n				return 20 > b\n			})))\n		},\n		enviar: function () {\n			var a = {\n				estadoEnvio: \"esperando\"\n			};\n			return b.post(\"/smn/actualizar_sol_y_luna\", this.items).success(function (b, c) {\n				a.estadoEnvio = \"recibido\", a.respuesta = {\n					exitoso: !0,\n					status: c,\n					data: b\n				}\n			}).error(function (b, c, e) {\n				var f = e(\"Content-type\").search(\"text/html\") >= 0;\n				a.estadoEnvio = \"recibido\", a.respuesta = {\n					exitoso: !1,\n					status: c,\n					dataHtml: f ? d.trustAsHtml(b) : \"\",\n					data: f ? \"\" : b\n				}\n			}), a\n		},\n		generar: function (a) {\n			var b = this,\n				d = new Date,\n				g = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);\n			this.limpiar();\n			for (var h = [132, 137, 454, 1425, 1712, 1795, 1868, 2195, 2278, 2954, 4116, 4317, 4558, 4856, 4864, 5149, 5648, 5874, 5888, 5908, 6425, 7236, 7641, 8296, 8368, 8618, 8861, 8994, 9296, 9378, 9598, 9903, 10118, 10810], i = 0; a > i; ++i) {\n				var j = new Date(g.getTime() + 1e3 * i * 60 * 60 * 24);\n				angular.forEach(h, function (a) {\n					var d = new e;\n					d.zona = a, d.fecha = c.fechaATexto(j), d.salluna = f(100, 900), d.azsalluna = c.randomRange(5, 35), d.pueluna = f(1e3, 2300), d.azpueluna = c.randomRange(140, 170), d.salsol = f(400, 800), d.azsalsol = c.randomRange(45, 135), d.puesol = f(1600, 2e3), d.azpuesol = c.randomRange(45, 135), b.items.push(d)\n				})\n			}\n		},\n		limpiar: function () {\n			this.items.splice(0, this.items.length)\n		}\n	}\n}]), angular.module(\"testerUiApp\").factory(\"utilSrv\", function () {\n	return {\n		pad: function (a, b) {\n			for (a = String(a); a.length < b;) a = \"0\" + a;\n			return a\n		},\n		fechaATexto: function (a) {\n			return this.pad(a.getFullYear(), 4) + this.pad(a.getMonth() + 1, 2) + this.pad(a.getDate(), 2)\n		},\n		horaATexto: function (a) {\n			return this.pad(a.getHours(), 2) + this.pad(a.getMinutes(), 2) + this.pad(a.getSeconds(), 2)\n		},\n		fechaHoraATexto: function (a) {\n			return this.fechaATexto(a) + \" \" + this.horaATexto(a)\n		},\n		randomRange: function (a, b) {\n			return a + Math.floor(Math.random() * (b - a))\n		},\n		randomElement: function (a) {\n			return a[this.randomRange(0, a.length)]\n		},\n		sumaHoras: function (a, b) {\n			return new Date(a.getTime() + 60 * b * 60 * 1e3)\n		},\n		sumarMinutos: function (a, b) {\n			return new Date(a.getTime() + 60 * b * 1e3)\n		},\n		restaFechas: function (a, b) {\n			return a.getTime() - b.getTime()\n		},\n		redondear: function (a, b) {\n			var c = Math.pow(10, b);\n			return parseFloat((Math.round(a * c) / c).toFixed(b))\n		}\n	}\n}), angular.module(\"testerUiApp\").directive(\"reaDropDown\", function () {\n	var a = function (a, b) {\n			b.addClass(a.anchorClass || \"reaDropDownAnchor\")\n		},\n		b = function (a, b) {\n			var c = this,\n				d = b,\n				e = [];\n			c.addSubordinate = function (a) {\n				e.push(a)\n			}, c.getAnchorElem = function () {\n				return d\n			};\n			var f = function (a) {\n				return function (b) {\n					angular.forEach(e, function (c) {\n						c[a](b)\n					})\n				}\n			};\n			a.show = f(\"show\"), a.hide = f(\"hide\"), a.toggle = f(\"toggle\")\n		};\n	return b.$inject = [\"$scope\", \"$element\"], {\n		restrcit: \"EA\",\n		scope: {\n			show: \"=?reaShow\",\n			hide: \"=?reaHide\",\n			toggle: \"=?reaToggle\",\n			anchorClass: \"@?reaAnchorClass\"\n		},\n		link: a,\n		controller: b\n	}\n}).directive(\"reaDropDownContent\", [\"$animate\", \"$document\", \"$timeout\", function (a, b, c) {\n	var d = function (d, e, f, g) {\n		g.addSubordinate(d), e.addClass(\"ng-hide \" + (d.popupClass || \"reaDropDownPopup\"));\n		var h = !1,\n			i = function (a) {\n				angular.isFunction(d.eventHandler) && d.eventHandler(h, a, g.getAnchorElem(), e)\n			},\n			j = function (b) {\n				h = !1, i(b), a.addClass(e, \"ng-hide\", {\n					tempClasses: \"ng-hide-animate\"\n				})\n			},\n			k = function (a) {\n				a.target.compareDocumentPosition(e[0]) & (Node.DOCUMENT_POSITION_CONTAINS | Node.DOCUMENT_POSITION_DISCONNECTED) || (d.$apply(function () {\n					j(angular.element(a))\n				}), b.off(\"click\", k))\n			};\n		d.hide = function (a) {\n			j(a), b.off(\"click\", k)\n		}, d.show = function (d) {\n			b.off(\"click\", k), h = !0, i(d), a.removeClass(e, \"ng-hide\", {\n				tempClasses: \"ng-hide-animate\"\n			}), c(function () {\n				b.on(\"click\", k)\n			})\n		}, d.toggle = function (a) {\n			h ? d.hide(a) : d.show(a)\n		}\n	};\n	return {\n		require: \"^reaDropDown\",\n		restrict: \"AE\",\n		scope: {\n			show: \"=?reaShow\",\n			hide: \"=?reaHide\",\n			toggle: \"=?reaToggle\",\n			popupClass: \"@?reaPopupClass\",\n			eventHandler: \"=?reaEventHandler\"\n		},\n		link: d\n	}\n}]), angular.module(\"testerUiApp\").directive(\"reaElement\", function () {\n	return {\n		restrict: \"AE\",\n		controller: [\"$scope\", \"$element\", function (a, b) {\n			a.reaElement = b\n		}],\n		scope: {\n			reaElement: \"=\"\n		}\n	}\n}), angular.module(\"testerUiApp\").directive(\"reaOnCreation\", function () {\n	return {\n		restrict: \"A\",\n		controller: [\"$scope\", \"$element\", function (a, b) {\n			a.reaOnCreation(b)\n		}],\n		scope: {\n			reaOnCreation: \"=\"\n		}\n	}\n}), angular.module(\"testerUiApp\").directive(\"visorPronoLoc\", function () {\n	return {\n		templateUrl: \"views/visorPronoLoc.html\",\n		restrict: \"A\",\n		scope: {\n			pronoLoc: \"=visorPronoLoc\"\n		}\n	}\n});",
 			"settings":
 			{
-				"buffer_size": 1938,
-				"line_ending": "Unix"
+				"buffer_size": 22170,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "/C/Temp/borrame.data",
+			"settings":
+			{
+				"buffer_size": 0,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "project/plugins.sbt",
+			"settings":
+			{
+				"buffer_size": 565,
+				"line_ending": "Windows"
 			}
 		}
 	],
@@ -129,10 +142,14 @@
 	"build_varint": "",
 	"command_palette":
 	{
-		"height": 150.0,
-		"last_filter": "",
+		"height": 196.0,
+		"last_filter": "form",
 		"selected_items":
 		[
+			[
+				"form",
+				"Format: Javascript"
+			],
 			[
 				"install",
 				"Package Control: Install Package"
@@ -140,10 +157,6 @@
 			[
 				"insta",
 				"Package Control: Install Package"
-			],
-			[
-				"form",
-				"Format: Javascript"
 			],
 			[
 				"package",
@@ -187,14 +200,17 @@
 	},
 	"expanded_folders":
 	[
-		"/C/Projects/activator/coc-war-organizer/app",
-		"/C/Projects/activator/coc-war-organizer/app/ngDirectives",
-		"/C/Projects/activator/coc-war-organizer/misc",
-		"/C/Projects/activator/coc-war-organizer/project",
-		"/C/Projects/activator/coc-war-organizer"
+		"/F/Projects/activator/coc-war-organizer/conf",
+		"/F/Projects/activator/coc-war-organizer/conf/evolutions",
+		"/F/Projects/activator/coc-war-organizer/conf/evolutions/default"
 	],
 	"file_history":
 	[
+		"/C/Users/Gustavo/.m2/settings.xml",
+		"/F/Projects/libros/akka-streams-doc/project/plugins.sbt",
+		"/F/Projects/activator/smn-nudo/project/plugins.sbt",
+		"/F/Projects/Intelap/librerias/JsfLibEap/pom.xml",
+		"/C/Users/Gustavo/Downloads/theme-11461.xml",
 		"/C/Projects/tutorials/sbt/build.sbt",
 		"/F/Projects/activator/smn-nudo/target/universal/smn-nudo-1.0-SNAPSHOT/bin/smn_nudo.bat",
 		"/C/Temp/stage/conf/logback.xml",
@@ -294,6 +310,9 @@
 		"case_sensitive": true,
 		"find_history":
 		[
+			"post(",
+			"smn_",
+			"participant_id",
 			"clash_start_orga_event_id",
 			"clash_end_event_id",
 			"battle_start_event_id",
@@ -391,12 +410,12 @@
 						"translation.y": 120.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 3,
+					"stack_index": 5,
 					"type": "text"
 				},
 				{
 					"buffer": 1,
-					"file": "/F/Projects/activator/coc-war-organizer/conf/evolutions/default/2.sql",
+					"file": "conf/evolutions/default/2.sql",
 					"semi_transient": false,
 					"settings":
 					{
@@ -417,7 +436,7 @@
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 420.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 2,
@@ -429,15 +448,15 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 6133,
+						"buffer_size": 6140,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								3272,
-								3272
+								4767,
+								4767
 							]
 						],
 						"settings":
@@ -446,7 +465,7 @@
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 1620.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 1,
@@ -454,34 +473,87 @@
 				},
 				{
 					"buffer": 3,
-					"file": "/C/Users/Gustavo/Downloads/theme-11461.xml",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 1938,
+						"buffer_size": 22170,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								1162,
-								1162
+								16096,
+								16095
 							]
 						],
 						"settings":
 						{
-							"is_xml": true,
-							"syntax": "Packages/XML/XML.tmLanguage",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true,
-							"word_wrap": false
+							"is_xml": false,
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"translate_tabs_to_spaces": false
 						},
-						"translation.x": -0.0,
-						"translation.y": 180.0,
+						"translation.x": 0.0,
+						"translation.y": 8385.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "/C/Temp/borrame.data",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 0,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Text/Plain text.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 4,
+					"type": "text"
+				},
+				{
+					"buffer": 5,
+					"file": "project/plugins.sbt",
+					"semi_transient": true,
+					"settings":
+					{
+						"buffer_size": 565,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Text/Plain text.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 3,
 					"type": "text"
 				}
 			]

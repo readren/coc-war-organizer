@@ -19,6 +19,7 @@ import settings.account.Account
 import settings.account.AccountSrv
 import utils.TransacMode
 import utils.TransacTransitionExec
+import utils.TransactionalTransition._
 import utils.Transition
 import common.typeAliases._
 
@@ -65,7 +66,7 @@ trait OrganizationDao {
 	def findOf(accountId: Account.Id): TiTac[Option[Organization.Id]]
 }
 
-class MembershipSrvImpl (logSrv: LogSrv, organizationDao: OrganizationDao, membershipDao: MembershipDao, joinRequestDao: JoinRequestDao, iconDao: IconDao, accountSrv: AccountSrv)
+class MembershipSrvImpl @Inject() (logSrv: LogSrv, organizationDao: OrganizationDao, membershipDao: MembershipDao, joinRequestDao: JoinRequestDao, iconDao: IconDao, accountSrv: AccountSrv)
 		extends MembershipSrv {
 	val logger = Logger(this.getClass())
 

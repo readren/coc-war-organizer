@@ -18,6 +18,7 @@ import settings.account.Account
 import utils.TransacMode
 import utils.Transition
 import utils.TransacTransitionExec
+import utils.TransactionalTransition._
 import play.api.libs.json.Json
 import play.api.libs.json.JsValue
 import play.api.libs.json.Writes

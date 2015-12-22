@@ -17,6 +17,7 @@ import settings.account.Account
 import log.OrgaEvent
 import utils.Transition
 import utils.TransacMode
+import utils.TransactionalTransition._
 import log.events.joinRequest.JoinResponseEventDto
 import settings.membership.AbandonEventDto
 import common.typeAliases._

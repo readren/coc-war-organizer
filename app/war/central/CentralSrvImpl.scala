@@ -3,6 +3,7 @@ package war.central
 import common.typeAliases._
 import settings.account.Account
 import utils.TransacTransitionExec
+import utils.TransactionalTransition._
 import javax.inject.Inject
 import common.ParameterlessCmd
 import settings.membership.MembershipSrv
@@ -54,43 +55,10 @@ case class InPostWar(startPreparationEventId: WarEvent.Id, startBattleEventId: W
   override val oEndWarEventId = Some(endWarEventId)
 }
 
-@ImplementedBy(classOf[CentralDaoImpl])
-trait CentralDao {
-
-  def insertNewWarEvent(actorIconName: String): TiTac[WarEventInfo]
-
-  /**
-   * Gives all the events of the current war of the received organisation after: the received threshold if present, or since the beginning of the war if threshold is absent.
-   * The war phase info can be obtained from the received organisation id, nevertheless, it is asked as argument because it is needed and almost all callers already have it at hand.
-   */
-  def getWarEventsAfter(organizationId: Organization.Id, phase: WarPhaseInfo, oThreshold: Option[WarEvent.Instant]): TiTac[Seq[WarEvent]]
-
-  //  def getClashIdOf(organizationId: Organization.Id): TiTac[Option[WarEvent.Id]]
-  //  def getBattleIdOf(clashId: WarEvent.Id): TiTac[Option[WarEvent.Id]]
-  //  def getEndIdOf(battleId: WarEvent.Id): TiTac[Option[WarEvent.Id]]
-
-  def getWarPhaseInfo(organizationId: Organization.Id): TiTac[WarPhaseInfo]
-  //  def getWarPhaseInfo(organizationId: Organization.Id): TiTac[WarPhaseInfo]
-
-  /**@throws AlreadyExistException if the organisation is already in war */
-  def insertStartPreparationEvent(warEventId: WarEvent.Id, orgaEventId: OrgaEvent.Id, organizationId: Organization.Id, enemyClanName: String, enemyClanTag: String): TiTac[Unit]
-  def putNextClashMark(previousClashId: WarEvent.Id, newClashId: WarEvent.Id): TiTac[Unit]
-
-  def insertAddParticipantEvent(warEventId: WarEvent.Id, clashId: WarEvent.Id, iconTag: Icon.Tag, basePosition: Position): TtTm[Unit]
-  def insertStartBattleEvent(warEventId: WarEvent.Id, clashId: WarEvent.Id): TtTm[Unit]
-  def insertAddGuessEvent(warEventId: WarEvent.Id, clashId: WarEvent.Id, cmd: AddGuessCmd): TtTm[Unit]
-  def getSchedule(clashId: WarEvent.Id, cmd: GetScheduleCmd): TiTac[ScheduleDto]
-  def insertFightEvent(warEventId: WarEvent.Id, battleId: WarEvent.Id, attackInfo: FightInfo, kind: FightKind): TtTm[Unit]
-  def insertEndWarEvent(warEventId: WarEvent.Id, clashId: WarEvent.Id, cmd: EndWarCmd): TtTm[Unit]
-
-  def insertUndoEvent(warEventId: WarEvent.Id, clashId: WarEvent.Id, cmd: UndoCmd): TtTm[Unit]
-
-}
-
 /**
  * @author Gustavo
  */
-class CentralSrvImpl @Inject() (centralKnower: CentralKnower, centralPerformer: CentralPerformer, centralDao: CentralDao, membershipSrv: MembershipSrv, iconDao: IconDao, logSrv: LogSrv) extends CentralSrv {
+class CentralSrvImpl @Inject() (centralKnower: CentralKnower, centralPerformer: CentralPerformer, centralDao: CentralKnowerRepo, membershipSrv: MembershipSrv, iconDao: IconDao, logSrv: LogSrv) extends CentralSrv {
 
   private case class CheckBonus(icon: Icon)
 

@@ -8,6 +8,7 @@ import java.sql.Timestamp
 import settings.membership.Organization
 import settings.membership.MembershipSrv
 import utils.TransacTransitionExec
+import utils.TransactionalTransition._
 import com.google.inject.ImplementedBy
 import settings.account.Account
 import common.typeAliases._

@@ -41,7 +41,9 @@ case class TransitionTry[S, +A](run: S => TransitionResult[S, Try[A]]) {
 
 object TransitionTry {
 
-  def unit[S, A](a: A): TransitionTry[S, A] = TransitionTry { s1 => TransitionResult(s1, Success(a)) }
+  def unit[S, A](a: => A): TransitionTry[S, A] = TransitionTry { s1 => TransitionResult(s1, Try(a)) }
+
+  def fail[S, A](e: Exception): TransitionTry[S, A] = TransitionTry { s1 => TransitionResult(s1, Failure(e)) }
 
   def sequence[S, A](l: List[TransitionTry[S, A]]): TransitionTry[S, List[A]] = {
     // Se podría haber implementado mas conciso así: l.foldLeft(TransitionTry[S, List[A]](s => TransitionResult(s, Success(Nil))))((sas, sa) => sa.map2(sas)(_ :: _)).map(_.reverse)
